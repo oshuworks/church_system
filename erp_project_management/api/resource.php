@@ -1,86 +1,179 @@
 <?php
-// Enable error reporting for debugging
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
+// resource.php - API endpoint for resource management
+include '../includes/db.php';
 header('Content-Type: application/json');
 
-// Database configuration
-$config = [
-    'host' => 'localhost',
-    'username' => 'root',
-    'password' => '',
-    'database' => 'erp_project_management'
-];
+// Handle GET request to fetch resource details
+if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+    $resource_id = $_GET['resource_id'] ?? null;
 
-// Create connection
-$conn = new mysqli($config['host'], $config['username'], $config['password'], $config['database']);
-
-// Check connection
-if ($conn->connect_error) {
-    sendErrorResponse(500, "Database connection failed: " . $conn->connect_error);
-    exit();
-}
-
-try {
-    // Get all resources with their current allocation percentages
-    $query = "SELECT 
-                r.*,
-                COALESCE(SUM(ra.allocation_percent), 0) as allocated_percent,
-                (100 - COALESCE(SUM(ra.allocation_percent), 0)) as available_percent
-              FROM resources r
-              LEFT JOIN resource_allocations ra ON r.resource_id = ra.resource_id
-              GROUP BY r.resource_id";
-    
-    $result = $conn->query($query);
-    
-    if ($result === false) {
-        throw new Exception("Query failed: " . $conn->error);
+    if (!$resource_id) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Resource ID is required']);
+        exit;
     }
-    
-    $resources = [];
-    while ($row = $result->fetch_assoc()) {
-        // Format the resource data
-        $resources[] = [
-            'resource_id' => (int)$row['resource_id'],
-            'name' => $row['name'],
-            'resource_type' => $row['resource_type'],
-            'availability' => (float)$row['available_percent'],
-            'cost_per_unit' => (float)$row['cost_per_unit'],
-            'allocated_percent' => (float)$row['allocated_percent']
-        ];
+
+    // Fetch resource details
+    $stmt = $conn->prepare("SELECT * FROM resources WHERE resource_id = ?");
+    $stmt->bind_param("i", $resource_id);
+    $stmt->execute();
+    $resource = $stmt->get_result()->fetch_assoc();
+
+    if (!$resource) {
+        http_response_code(404);
+        echo json_encode(['error' => 'Resource not found']);
+        exit;
     }
-    
-    // Send success response
-    sendSuccessResponse($resources);
-    
-} catch (Exception $e) {
-    sendErrorResponse(500, $e->getMessage());
-}
 
-// Close connection
-$conn->close();
+    // Fetch current allocations for this resource
+    $stmt = $conn->prepare("
+        SELECT ra.*, t.name as task_name, t.start_date, t.end_date, p.name as project_name
+        FROM resource_allocations ra
+        JOIN tasks t ON ra.task_id = t.task_id
+        JOIN projects p ON t.project_id = p.project_id
+        WHERE ra.resource_id = ?
+        ORDER BY t.start_date
+    ");
+    $stmt->bind_param("i", $resource_id);
+    $stmt->execute();
+    $allocations = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 
-/**
- * Send a success response with data
- */
-function sendSuccessResponse($data) {
-    http_response_code(200);
     echo json_encode([
-        'status' => 'success',
-        'data' => $data,
-        'timestamp' => date('Y-m-d H:i:s')
-    ], JSON_PRETTY_PRINT);
+        'resource' => $resource,
+        'allocations' => $allocations
+    ]);
+    exit;
 }
 
-/**
- * Send an error response
- */
-function sendErrorResponse($statusCode, $message) {
-    http_response_code($statusCode);
-    echo json_encode([
-        'status' => 'error',
-        'message' => $message,
-        'timestamp' => date('Y-m-d H:i:s')
-    ], JSON_PRETTY_PRINT);
+// Handle POST request for updating resource allocation
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $resource_id = $_POST['resource_id'] ?? null;
+    $task_id = $_POST['task_id'] ?? null;
+    $allocation_percent = $_POST['allocation_percent'] ?? 0;
+
+    if (!$resource_id || !$task_id) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Resource ID and Task ID are required']);
+        exit;
+    }
+
+    // Validate allocation percentage
+    if ($allocation_percent < 0 || $allocation_percent > 100) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Allocation percentage must be between 0 and 100']);
+        exit;
+    }
+
+    // Check if allocation already exists
+    $stmt = $conn->prepare("SELECT allocation_id FROM resource_allocations WHERE resource_id = ? AND task_id = ?");
+    $stmt->bind_param("ii", $resource_id, $task_id);
+    $stmt->execute();
+    $existing = $stmt->get_result()->fetch_assoc();
+
+    if ($existing) {
+        // Update existing allocation
+        $stmt = $conn->prepare("UPDATE resource_allocations SET allocation_percent = ? WHERE resource_id = ? AND task_id = ?");
+        $stmt->bind_param("dii", $allocation_percent, $resource_id, $task_id);
+        $stmt->execute();
+    } else {
+        // Insert new allocation
+        $stmt = $conn->prepare("INSERT INTO resource_allocations (resource_id, task_id, allocation_percent) VALUES (?, ?, ?)");
+        $stmt->bind_param("iid", $resource_id, $task_id, $allocation_percent);
+        $stmt->execute();
+    }
+
+    echo json_encode(['success' => true, 'message' => 'Resource allocation updated successfully']);
+    exit;
 }
+
+// Handle PUT request for updating resource details
+if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
+    $resource_id = $_POST['resource_id'] ?? null;
+
+    if (!$resource_id) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Resource ID is required']);
+        exit;
+    }
+
+    // Get updated fields
+    $name = $_POST['name'] ?? null;
+    $resource_type = $_POST['resource_type'] ?? null;
+    $availability = $_POST['availability'] ?? null;
+    $cost_per_unit = $_POST['cost_per_unit'] ?? null;
+
+    // Build dynamic update query
+    $update_fields = [];
+    $params = [];
+    $types = "";
+
+    if ($name !== null) {
+        $update_fields[] = "name = ?";
+        $params[] = $name;
+        $types .= "s";
+    }
+    if ($resource_type !== null) {
+        $update_fields[] = "resource_type = ?";
+        $params[] = $resource_type;
+        $types .= "s";
+    }
+    if ($availability !== null) {
+        $update_fields[] = "availability = ?";
+        $params[] = $availability;
+        $types .= "d";
+    }
+    if ($cost_per_unit !== null) {
+        $update_fields[] = "cost_per_unit = ?";
+        $params[] = $cost_per_unit;
+        $types .= "d";
+    }
+
+    if (empty($update_fields)) {
+        http_response_code(400);
+        echo json_encode(['error' => 'No fields to update']);
+        exit;
+    }
+
+    $params[] = $resource_id;
+    $types .= "i";
+
+    $sql = "UPDATE resources SET " . implode(", ", $update_fields) . " WHERE resource_id = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param($types, ...$params);
+
+    if ($stmt->execute()) {
+        echo json_encode(['success' => true, 'message' => 'Resource updated successfully']);
+    } else {
+        http_response_code(500);
+        echo json_encode(['error' => 'Failed to update resource']);
+    }
+    exit;
+}
+
+// Handle DELETE request for removing resource allocation
+if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
+    $resource_id = $_POST['resource_id'] ?? null;
+    $task_id = $_POST['task_id'] ?? null;
+
+    if (!$resource_id || !$task_id) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Resource ID and Task ID are required']);
+        exit;
+    }
+
+    $stmt = $conn->prepare("DELETE FROM resource_allocations WHERE resource_id = ? AND task_id = ?");
+    $stmt->bind_param("ii", $resource_id, $task_id);
+
+    if ($stmt->execute()) {
+        echo json_encode(['success' => true, 'message' => 'Resource allocation removed successfully']);
+    } else {
+        http_response_code(500);
+        echo json_encode(['error' => 'Failed to remove resource allocation']);
+    }
+    exit;
+}
+
+// Method not allowed
+http_response_code(405);
+echo json_encode(['error' => 'Method not allowed']);
 ?>

@@ -72,3 +72,69 @@ CREATE TABLE notifications (
     is_read BOOLEAN DEFAULT FALSE,
     FOREIGN KEY (project_id) REFERENCES projects(project_id)
 );
+
+
+
+
+INSERT INTO projects (name, description, start_date, end_date, budget) VALUES
+('Youth Leadership Development Program', 'A training project aimed at equipping KKB members with leadership and organizational skills for church and community service.', '2025-01-10', '2025-03-30', 50000.00),
+('Community Outreach and Evangelism Drive', 'Monthly outreach activities organized by KKB to engage youth and local residents through evangelism, feeding, and volunteer programs.', '2025-02-01', '2025-06-01', 80000.00),
+('KKB Worship Night 2025', 'An annual event gathering youth from nearby extensions for worship, fellowship, and talent showcases.', '2025-04-15', '2025-04-20', 60000.00),
+('KKB Digital Ministry Upgrade', 'A project to enhance KKB online presence, including website development, multimedia equipment procurement, and livestream setup.', '2025-05-01', '2025-08-30', 120000.00);
+
+
+INSERT INTO tasks (project_id, name, description, start_date, end_date, dependency_task_id, progress_percent) VALUES
+(1, 'Recruitment and Orientation', 'Identify and onboard new KKB youth leaders.', '2025-01-10', '2025-01-20', NULL, 100),
+(1, 'Leadership Workshops', 'Conduct training sessions on servant leadership and project management.', '2025-01-21', '2025-03-15', 1, 85),
+(2, 'Barangay Evangelism', 'Coordinate outreach activities in nearby barangays.', '2025-02-01', '2025-04-30', NULL, 70),
+(2, 'Feeding Program', 'Organize feeding drives for children and families.', '2025-03-01', '2025-05-30', 3, 60),
+(3, 'Event Planning', 'Plan and coordinate the worship night logistics and program flow.', '2025-04-01', '2025-04-10', NULL, 100),
+(3, 'Stage and Technical Setup', 'Set up sound, lights, and multimedia equipment.', '2025-04-11', '2025-04-14', 5, 90),
+(4, 'Website Development', 'Develop the official KKB extension website.', '2025-05-01', '2025-06-30', NULL, 50),
+(4, 'Livestream Setup', 'Set up new livestream system and test with ministry events.', '2025-07-01', '2025-08-15', 7, 40);
+
+
+INSERT INTO resources (name, resource_type, availability, cost_per_unit) VALUES
+('John Dela Cruz', 'Human', 100.00, 0.00),
+('Maria Santos', 'Human', 80.00, 0.00),
+('Sound System Set', 'Equipment', 60.00, 15000.00),
+('Multimedia Laptop', 'Equipment', 50.00, 45000.00),
+('Projector and Screen', 'Equipment', 70.00, 25000.00),
+('Youth Ministry Budget Fund', 'Financial', 100.00, 50000.00);
+
+
+INSERT INTO resource_allocations (task_id, resource_id, allocation_percent) VALUES
+(1, 1, 50.00),
+(2, 2, 60.00),
+(3, 1, 40.00),
+(4, 6, 80.00),
+(5, 2, 50.00),
+(6, 3, 70.00),
+(7, 4, 60.00),
+(8, 5, 70.00);
+
+
+INSERT INTO budgets (project_id, description, estimated_cost, actual_cost) VALUES
+(1, 'Training materials, meals, and venue rental', 50000.00, 48000.00),
+(2, 'Outreach materials and transportation', 80000.00, 75500.00),
+(3, 'Sound system, stage decor, and lighting', 60000.00, 61000.00),
+(4, 'Website, streaming setup, and software licenses', 120000.00, 118500.00);
+
+
+INSERT INTO progress_reports (project_id, task_id, status, progress_percent, report_date, remarks) VALUES
+(1, 1, 'Completed', 100, '2025-01-25', 'All participants successfully oriented.'),
+(1, 2, 'In Progress', 85, '2025-03-10', 'Workshop ongoing; strong attendance.'),
+(2, 3, 'In Progress', 70, '2025-04-15', 'Barangay outreach conducted successfully.'),
+(2, 4, 'In Progress', 60, '2025-05-20', 'Feeding program awaiting more volunteers.'),
+(3, 5, 'Completed', 100, '2025-04-13', 'Program flow finalized and approved.'),
+(3, 6, 'Completed', 90, '2025-04-18', 'Setup completed ahead of schedule.'),
+(4, 7, 'In Progress', 50, '2025-07-01', 'Website 50% done with functional pages.'),
+(4, 8, 'In Progress', 40, '2025-08-10', 'Livestream testing ongoing.');
+
+
+
+INSERT INTO notifications (project_id, message, type, is_read) VALUES
+(1, 'Leadership workshop nearing completion — prepare evaluation forms.', 'Info', FALSE),
+(2, 'Feeding Program needs additional funds allocation.', 'Warning', FALSE),
+(3, 'KKB Worship Night setup completed successfully.', 'Info', TRUE),
+(4, 'Website testing scheduled for August 5.', 'Info', FALSE);
