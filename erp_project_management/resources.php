@@ -9,6 +9,8 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="css/resources.css" />
     <link rel="stylesheet" href="css/navbar.css" />
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body class="bg-primary-bg">
 
@@ -19,6 +21,16 @@
     <div id="resource-listing" class="card secondary-card p-4">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h1>Resource Management</h1>
+            <div class="btn-group" role="group">
+                <input type="radio" class="btn-check" name="viewMode" id="listView" autocomplete="off" checked>
+                <label class="btn btn-outline-dark" for="listView" onclick="setViewMode('list')">Resource List</label>
+
+                <input type="radio" class="btn-check" name="viewMode" id="utilizationView" autocomplete="off">
+                <label class="btn btn-outline-dark" for="utilizationView" onclick="setViewMode('utilization')">Utilization Report</label>
+
+                <input type="radio" class="btn-check" name="viewMode" id="analyticsView" autocomplete="off">
+                <label class="btn btn-outline-dark" for="analyticsView" onclick="setViewMode('analytics')">Analytics Dashboard</label>
+            </div>
         </div>
 
         <div class="mb-3">
@@ -31,8 +43,9 @@
                     <tr>
                         <th>Name</th>
                         <th>Type</th>
-                        <th>Availability</th>
-                        <th>Cost per Unit</th>
+                        <th id="allocationHeader">Availability</th>
+                        <th id="statusHeader" class="d-none">Cost per Unit</th>
+                        <th id="costHeader" class="d-none">Status</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -42,6 +55,96 @@
                     </tr>
                 </tbody>
             </table>
+        </div>
+    </div>
+
+    <!-- Analytics Dashboard (shown when analytics view is selected) -->
+    <div id="analytics-dashboard" class="card secondary-card p-4 d-none">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>Resource Analytics Dashboard</h1>
+            <button class="btn btn-outline-dark" onclick="refreshAnalytics()">
+                <i class="fas fa-sync-alt me-2"></i>Refresh
+            </button>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="row mb-4" id="analytics-summary">
+            <div class="col-md-3 mb-3">
+                <div class="card bg-primary text-white">
+                    <div class="card-body text-center">
+                        <h3 id="total-resources">0</h3>
+                        <p>Total Resources</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card bg-success text-white">
+                    <div class="card-body text-center">
+                        <h3 id="well-utilized">0</h3>
+                        <p>Well Utilized (50-100%)</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card bg-warning">
+                    <div class="card-body text-center">
+                        <h3 id="under-utilized">0</h3>
+                        <p>Under Utilized (&lt;50%)</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card bg-danger text-white">
+                    <div class="card-body text-center">
+                        <h3 id="over-utilized">0</h3>
+                        <p>Over Utilized (&gt;100%)</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts and Detailed Analytics -->
+        <div class="row">
+            <div class="col-md-8 mb-4">
+                <div class="card bg-dark p-3">
+                    <h5 class="text-dark">Resource Utilization Chart</h5>
+                    <canvas id="utilizationChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="card bg-dark p-3">
+                    <h5 class="text-dark">Resource Types Distribution</h5>
+                    <canvas id="resourceTypesChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card bg-dark p-3">
+                    <h5 class="text-dark">Detailed Utilization Table</h5>
+                    <div class="table-responsive">
+                        <table class="table table-dark">
+                            <thead>
+                                <tr>
+                                    <th>Resource</th>
+                                    <th>Type</th>
+                                    <th>Current Allocation</th>
+                                    <th>Utilization Status</th>
+                                    <th>Availability</th>
+                                    <th>Cost per Unit</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="analytics-table">
+                                <tr>
+                                    <td colspan="7" class="text-center text-muted">Loading analytics...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -97,6 +200,12 @@
                             <button class="btn accent-btn w-100 mb-2 text-dark" data-bs-toggle="modal" data-bs-target="#allocateModal">
                                 Allocate to Task
                             </button>
+                            <button class="btn btn-warning w-100 mb-2 text-dark" onclick="autoBalanceResource(currentResourceId)">
+                                Auto-Balance Allocation
+                            </button>
+                            <button class="btn btn-info w-100 text-dark" onclick="loadBalancingRecommendations()">
+                                View Balancing Recommendations
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -121,6 +230,13 @@
                                 </tr>
                             </tbody>
                         </table>
+                    </div>
+                </div>
+
+                <div class="card bg-dark p-3 mt-3" id="balancing-recommendations" style="display: none;">
+                    <h5 class="text-dark">Resource Balancing Recommendations</h5>
+                    <div class="row">
+                        <!-- Balancing recommendations will be populated here -->
                     </div>
                 </div>
             </div>
@@ -188,9 +304,36 @@
                             <option value="">Loading tasks...</option>
                         </select>
                     </div>
+
+                    <!-- Current Allocation Summary -->
+                    <div class="mb-3" id="currentAllocationSummary" style="display: none;">
+                        <label class="form-label text-dark">Current Resource Allocation</label>
+                        <div class="card allocation-summary border">
+                            <div class="card-body p-2">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="allocation-text text-muted">Currently allocated:</span>
+                                    <span class="allocation-value" id="currentTotalText">0.0%</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="allocation-text text-muted">Available capacity:</span>
+                                    <span class="allocation-value text-success" id="availableCapacityText">100.0%</span>
+                                </div>
+                                <div class="progress" style="height: 8px;">
+                                    <div class="progress-bar" id="allocationProgressBar" style="width: 0%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="mb-3">
-                        <label for="allocationPercent" class="form-label text-dark">Allocation Percentage</label>
-                        <input type="number" class="form-control bg-dark text-dark border-secondary" id="allocationPercent" min="0" max="100" step="0.01" required>
+                        <label for="allocationPercent" class="form-label text-dark">New Allocation Percentage</label>
+                        <input type="number" class="form-control bg-dark text-dark border-secondary" id="allocationPercent"
+                               min="0.01" max="100" step="0.01" required
+                               placeholder="Enter percentage (1-100)"
+                               oninput="validateAllocationPercent(this)">
+                        <div class="form-text text-muted">Enter a percentage between 0.01% and 100%</div>
+                        <div class="invalid-feedback">Allocation percentage cannot exceed 100% or current total allocation.</div>
+                        <div class="valid-feedback">Allocation percentage is valid.</div>
                     </div>
                 </form>
             </div>

@@ -54,6 +54,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->execute();
         $existing = $stmt->get_result()->fetch_assoc();
 
+        // Check current total allocation for this resource
+        $stmt = $conn->prepare("
+            SELECT COALESCE(SUM(allocation_percent), 0) as total_allocation
+            FROM resource_allocations
+            WHERE resource_id = ?
+        ");
+        $stmt->bind_param("i", $resource_id);
+        $stmt->execute();
+        $total_result = $stmt->get_result()->fetch_assoc();
+        $current_total_allocation = $total_result['total_allocation'];
+
+        // Check if new allocation would exceed 100%
+        if ($existing) {
+            // For updates, check if the new allocation would exceed 100%
+            $new_total = $current_total_allocation - $existing['allocation_percent'] + $allocation_percent;
+            if ($new_total > 100) {
+                http_response_code(400);
+                echo json_encode([
+                    'error' => "Resource allocation would exceed 100%. Current total: {$current_total_allocation}%, requested: {$allocation_percent}%"
+                ]);
+                exit;
+            }
+        } else {
+            // For new allocations, check if it would exceed 100%
+            if ($current_total_allocation + $allocation_percent > 100) {
+                http_response_code(400);
+                echo json_encode([
+                    'error' => "Resource allocation would exceed 100%. Current total: {$current_total_allocation}%, requested: {$allocation_percent}%"
+                ]);
+                exit;
+            }
+        }
+
         if ($existing) {
             // Update existing allocation
             $stmt = $conn->prepare("UPDATE resource_allocations SET allocation_percent = ? WHERE task_id = ? AND resource_id = ?");

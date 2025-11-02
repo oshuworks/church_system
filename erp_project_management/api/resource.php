@@ -6,6 +6,48 @@ header('Content-Type: application/json');
 // Handle GET request to fetch resource details
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $resource_id = $_GET['resource_id'] ?? null;
+    $utilization = $_GET['utilization'] ?? null;
+
+    if ($utilization === 'report') {
+        // Generate utilization report for all resources
+        $stmt = $conn->prepare("
+            SELECT r.resource_id, r.name, r.resource_type, r.availability,
+                   COALESCE(SUM(ra.allocation_percent), 0) as total_allocation,
+                   COUNT(ra.allocation_id) as allocation_count
+            FROM resources r
+            LEFT JOIN resource_allocations ra ON r.resource_id = ra.resource_id
+            GROUP BY r.resource_id, r.name, r.resource_type, r.availability
+            ORDER BY r.name
+        ");
+        $stmt->execute();
+        $resources = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+
+        // Calculate utilization status for each resource
+        $utilization_report = array_map(function($resource) {
+            $total_allocation = floatval($resource['total_allocation']);
+            $resource['utilization_status'] = 'Under-utilized';
+
+            if ($total_allocation > 90) {
+                $resource['utilization_status'] = 'Over-utilized';
+            } elseif ($total_allocation > 50) {
+                $resource['utilization_status'] = 'Well-utilized';
+            }
+
+            $resource['total_allocation'] = $total_allocation;
+            return $resource;
+        }, $resources);
+
+        echo json_encode([
+            'utilization_report' => $utilization_report,
+            'summary' => [
+                'total_resources' => count($utilization_report),
+                'over_utilized' => count(array_filter($utilization_report, function($r) { return $r['utilization_status'] === 'Over-utilized'; })),
+                'well_utilized' => count(array_filter($utilization_report, function($r) { return $r['utilization_status'] === 'Well-utilized'; })),
+                'under_utilized' => count(array_filter($utilization_report, function($r) { return $r['utilization_status'] === 'Under-utilized'; }))
+            ]
+        ]);
+        exit;
+    }
 
     if (!$resource_id) {
         http_response_code(400);
@@ -57,18 +99,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    // Validate allocation percentage
-    if ($allocation_percent < 0 || $allocation_percent > 100) {
-        http_response_code(400);
-        echo json_encode(['error' => 'Allocation percentage must be between 0 and 100']);
-        exit;
-    }
-
     // Check if allocation already exists
     $stmt = $conn->prepare("SELECT allocation_id FROM resource_allocations WHERE resource_id = ? AND task_id = ?");
     $stmt->bind_param("ii", $resource_id, $task_id);
     $stmt->execute();
     $existing = $stmt->get_result()->fetch_assoc();
+
+    // Check current total allocation for this resource
+    $stmt = $conn->prepare("
+        SELECT COALESCE(SUM(allocation_percent), 0) as total_allocation
+        FROM resource_allocations
+        WHERE resource_id = ?
+    ");
+    $stmt->bind_param("i", $resource_id);
+    $stmt->execute();
+    $total_result = $stmt->get_result()->fetch_assoc();
+    $current_total_allocation = $total_result['total_allocation'];
+
+    // Check if new allocation would exceed 100%
+    if ($existing) {
+        // For updates, check if the new allocation would exceed 100%
+        $new_total = $current_total_allocation - $existing['allocation_percent'] + $allocation_percent;
+        if ($new_total > 100) {
+            http_response_code(400);
+            echo json_encode([
+                'error' => "Resource allocation would exceed 100%. Current total: {$current_total_allocation}%, requested: {$allocation_percent}%"
+            ]);
+            exit;
+        }
+    } else {
+        // For new allocations, check if it would exceed 100%
+        if ($current_total_allocation + $allocation_percent > 100) {
+            http_response_code(400);
+            echo json_encode([
+                'error' => "Resource allocation would exceed 100%. Current total: {$current_total_allocation}%, requested: {$allocation_percent}%"
+            ]);
+            exit;
+        }
+    }
 
     if ($existing) {
         // Update existing allocation
@@ -152,8 +220,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
 
 // Handle DELETE request for removing resource allocation
 if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
-    $resource_id = $_POST['resource_id'] ?? null;
-    $task_id = $_POST['task_id'] ?? null;
+    // Get parameters from URL (GET parameters)
+    $resource_id = $_GET['resource_id'] ?? null;
+    $task_id = $_GET['task_id'] ?? null;
 
     if (!$resource_id || !$task_id) {
         http_response_code(400);
@@ -161,14 +230,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
         exit;
     }
 
-    $stmt = $conn->prepare("DELETE FROM resource_allocations WHERE resource_id = ? AND task_id = ?");
-    $stmt->bind_param("ii", $resource_id, $task_id);
+    try {
+        $stmt = $conn->prepare("DELETE FROM resource_allocations WHERE resource_id = ? AND task_id = ?");
+        $stmt->bind_param("ii", $resource_id, $task_id);
 
-    if ($stmt->execute()) {
-        echo json_encode(['success' => true, 'message' => 'Resource allocation removed successfully']);
-    } else {
+        if ($stmt->execute()) {
+            if ($stmt->affected_rows > 0) {
+                echo json_encode(['success' => true, 'message' => 'Resource allocation removed successfully']);
+            } else {
+                http_response_code(404);
+                echo json_encode(['error' => 'Allocation not found']);
+            }
+        } else {
+            http_response_code(500);
+            echo json_encode(['error' => 'Failed to remove resource allocation']);
+        }
+    } catch (Exception $e) {
         http_response_code(500);
-        echo json_encode(['error' => 'Failed to remove resource allocation']);
+        echo json_encode(['error' => 'Database error: ' . $e->getMessage()]);
     }
     exit;
 }

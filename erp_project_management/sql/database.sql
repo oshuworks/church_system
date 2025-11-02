@@ -63,13 +63,27 @@ CREATE TABLE progress_reports (
     FOREIGN KEY (task_id) REFERENCES tasks(task_id)
 );
 
-CREATE TABLE notifications (
+CREATE TABLE budget_allocations (
+    budget_allocation_id INT AUTO_INCREMENT PRIMARY KEY,
+    budget_id INT NOT NULL,
+    task_id INT NOT NULL,
+    resource_id INT,
+    allocated_amount DECIMAL(15,2) DEFAULT 0.00,
+    spent_amount DECIMAL(15,2) DEFAULT 0.00,
+    FOREIGN KEY (budget_id) REFERENCES budgets(budget_id),
+    FOREIGN KEY (task_id) REFERENCES tasks(task_id),
+    FOREIGN KEY (resource_id) REFERENCES resources(resource_id)
+);
+
+CREATE TABLE resource_notifications (
     notification_id INT AUTO_INCREMENT PRIMARY KEY,
-    project_id INT NOT NULL,
-    message TEXT,
-    type ENUM('Info', 'Warning', 'Error'),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    resource_id INT,
+    project_id INT,
+    notification_type ENUM('over_utilization', 'under_utilization', 'balancing_recommendation', 'system_alert') NOT NULL,
+    message TEXT NOT NULL,
     is_read BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (resource_id) REFERENCES resources(resource_id),
     FOREIGN KEY (project_id) REFERENCES projects(project_id)
 );
 
@@ -133,8 +147,14 @@ INSERT INTO progress_reports (project_id, task_id, status, progress_percent, rep
 
 
 
-INSERT INTO notifications (project_id, message, type, is_read) VALUES
-(1, 'Leadership workshop nearing completion — prepare evaluation forms.', 'Info', FALSE),
-(2, 'Feeding Program needs additional funds allocation.', 'Warning', FALSE),
-(3, 'KKB Worship Night setup completed successfully.', 'Info', TRUE),
-(4, 'Website testing scheduled for August 5.', 'Info', FALSE);
+INSERT INTO budget_allocations (budget_id, task_id, resource_id, allocated_amount, spent_amount) VALUES
+(1, 1, 6, 15000.00, 14800.00),
+(1, 2, 6, 35000.00, 33200.00),
+(2, 3, 6, 20000.00, 19500.00),
+(2, 4, 6, 60000.00, 56000.00),
+(3, 5, 6, 10000.00, 10000.00),
+(3, 6, 3, 30000.00, 29000.00),
+(3, 6, 4, 20000.00, 22000.00),
+(4, 7, 4, 50000.00, 48500.00),
+(4, 8, 3, 20000.00, 19500.00),
+(4, 8, 5, 50000.00, 50500.00);

@@ -230,14 +230,79 @@ select.form-control.bg-dark option {
     color: #8b2635;
 }
 
-/* Responsive adjustments */
-@media (max-width: 768px) {
-    .card {
-        margin-bottom: 1rem;
-    }
+/* Form validation feedback */
+.form-control.is-valid {
+    border-color: var(--success-color);
+    box-shadow: 0 0 0 0.2rem rgba(180, 225, 151, 0.25);
+}
 
-    .btn {
-        width: 100%;
-        margin-bottom: 0.5rem;
-    }
+.form-control.is-invalid {
+    border-color: var(--error-color);
+    box-shadow: 0 0 0 0.2rem rgba(245, 166, 166, 0.25);
+}
+
+.valid-feedback {
+    display: block;
+    width: 100%;
+    margin-top: 0.25rem;
+    font-size: 0.875em;
+    color: #2d5016;
+}
+
+.invalid-feedback {
+    display: block;
+    width: 100%;
+    margin-top: 0.25rem;
+    font-size: 0.875em;
+    color: #8b2635;
+}
+
+/* Allocation Summary Display */
+.card.allocation-summary {
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    border: 1px solid #cbd5e0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.allocation-summary .card-body {
+    padding: 0.75rem;
+}
+
+.allocation-summary .progress {
+    height: 8px;
+    background-color: #e2e8f0;
+    border-radius: 4px;
+}
+
+.allocation-summary .progress-bar {
+    border-radius: 4px;
+    transition: all 0.3s ease;
+}
+
+.allocation-summary .allocation-text {
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.allocation-summary .allocation-value {
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+/* Chart card constraints */
+.card .card-body canvas {
+    max-height: 250px !important;
+    width: 100% !important;
+    height: auto !important;
+}
+
+/* Analytics chart cards */
+#analytics-dashboard .card {
+    overflow: hidden;
+}
+
+#utilizationChart,
+#resourceTypesChart {
+    max-height: 250px !important;
+    width: 100% !important;
 }
