@@ -207,11 +207,11 @@ function getBudgetStatus(remaining, total) {
 function getBudgetStatusBadge(status) {
     switch (status) {
         case 'good':
-            return '<span class="badge bg-success">On Track</span>';
+            return '<span class="badge bg-primary">On Track</span>';
         case 'warning':
-            return '<span class="badge bg-warning text-dark">Low Budget</span>';
+            return '<span class="badge bg-dark text-white">Low Budget</span>';
         case 'danger':
-            return '<span class="badge bg-danger">Over Budget</span>';
+            return '<span class="badge bg-dark">Over Budget</span>';
         default:
             return '<span class="badge bg-secondary">Unknown</span>';
     }

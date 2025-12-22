@@ -78,7 +78,7 @@
                 </div>
             </div>
             <div class="col-md-3 mb-3">
-                <div class="card bg-success text-white">
+                <div class="card bg-primary text-white">
                     <div class="card-body text-center">
                         <h3 id="well-utilized">0</h3>
                         <p>Well Utilized (50-100%)</p>
@@ -86,7 +86,7 @@
                 </div>
             </div>
             <div class="col-md-3 mb-3">
-                <div class="card bg-warning">
+                <div class="card bg-dark text-white">
                     <div class="card-body text-center">
                         <h3 id="under-utilized">0</h3>
                         <p>Under Utilized (&lt;50%)</p>
@@ -94,7 +94,7 @@
                 </div>
             </div>
             <div class="col-md-3 mb-3">
-                <div class="card bg-danger text-white">
+                <div class="card bg-dark text-white">
                     <div class="card-body text-center">
                         <h3 id="over-utilized">0</h3>
                         <p>Over Utilized (&gt;100%)</p>
@@ -184,7 +184,7 @@
                                 <div class="col-sm-8">
                                     <span id="resource-availability">-</span>
                                     <div class="progress mt-2">
-                                        <div class="progress-bar bg-success" id="availability-progress" style="width: 0%"></div>
+                                        <div class="progress-bar bg-primary" id="availability-progress" style="width: 0%"></div>
                                     </div>
                                 </div>
                             </div>

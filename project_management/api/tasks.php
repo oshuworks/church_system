@@ -6,17 +6,38 @@ header('Content-Type: application/json');
 // Handle GET request to fetch all tasks
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     try {
-        // Fetch all tasks with project information
-        $stmt = $conn->prepare("
-            SELECT t.*, p.name as project_name, p.project_id
-            FROM tasks t
-            LEFT JOIN projects p ON t.project_id = p.project_id
-            ORDER BY p.name, t.name
-        ");
+        $project_id = $_GET['project_id'] ?? null;
+        
+        if ($project_id) {
+            // Fetch tasks for specific project with dependency information
+            $stmt = $conn->prepare("
+                SELECT t.*, 
+                       p.name as project_name,
+                       dt.name as dependency_task_name
+                FROM tasks t
+                LEFT JOIN projects p ON t.project_id = p.project_id
+                LEFT JOIN tasks dt ON t.dependency_task_id = dt.task_id
+                WHERE t.project_id = ?
+                ORDER BY t.start_date, t.name
+            ");
+            $stmt->bind_param("i", $project_id);
+        } else {
+            // Fetch all tasks with project information
+            $stmt = $conn->prepare("
+                SELECT t.*, 
+                       p.name as project_name,
+                       dt.name as dependency_task_name
+                FROM tasks t
+                LEFT JOIN projects p ON t.project_id = p.project_id
+                LEFT JOIN tasks dt ON t.dependency_task_id = dt.task_id
+                ORDER BY p.name, t.start_date, t.name
+            ");
+        }
+        
         $stmt->execute();
         $tasks = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 
-        echo json_encode(['tasks' => $tasks]);
+        echo json_encode(['success' => true, 'tasks' => $tasks]);
 
     } catch (Exception $e) {
         http_response_code(500);

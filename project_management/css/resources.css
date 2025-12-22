@@ -1,13 +1,11 @@
-/* Color scheme following the percentages given */
+/* Color scheme - Black, White, and Blue only */
 :root {
-    --primary-bg: #F5F6FA; /* 60%: overall page background and neutral sections */
-    --secondary-bg: #A7C7E7; /* 30%: sidebar, header background, cards, secondary buttons */
-    --accent-color: #F8B195; /* 10%: primary buttons, icons, and progress highlights */
-    --success-color: #B4E197; /* Mint Green - Success/Positive */
-    --warning-color: #FFD580; /* Soft Amber - Warning */
-    --error-color: #F5A6A6;   /* Light Rose - Error */
-    --font-family: 'Poppins', sans-serif;
+    --primary-bg: #ffffff; /* White background */
+    --secondary-bg: #f5f5f5; /* Light gray for cards */
+    --accent-color: #007bff; /* System blue */
     --text-color: #000000; /* Black text for all elements */
+    --border-color: #dee2e6; /* Light gray for borders */
+    --font-family: 'Poppins', sans-serif;
 }
 
 /* Background of body */
@@ -77,11 +75,12 @@ body.bg-primary-bg {
 
 .badge.bg-primary {
     background-color: var(--accent-color) !important;
+    color: #ffffff !important;
 }
 
 .badge.bg-secondary {
-    background-color: #A7C7E7 !important;
-    color: #2d3748 !important;
+    background-color: #000000 !important;
+    color: #ffffff !important;
 }
 
 /* Progress bar styling */
@@ -100,9 +99,9 @@ body.bg-primary-bg {
 }
 
 .table-dark th {
-    border-color: #e2e8f0;
-    background-color: #A7C7E7;
-    color: var(--text-color);
+    border-color: var(--border-color);
+    background-color: var(--accent-color);
+    color: #ffffff;
     font-weight: 600;
 }
 
@@ -138,8 +137,9 @@ body.bg-primary-bg {
 }
 
 .modal-header.border-secondary {
-    border-color: #e2e8f0 !important;
-    background-color: #A7C7E7;
+    border-color: var(--border-color) !important;
+    background-color: var(--accent-color);
+    color: #ffffff !important;
 }
 
 .modal-header .modal-title {
@@ -161,7 +161,7 @@ body.bg-primary-bg {
     background-color: #ffffff !important;
     color: var(--text-color) !important;
     border-color: var(--accent-color);
-    box-shadow: 0 0 0 0.2rem rgba(248, 177, 149, 0.25);
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
 }
 
 .form-control.bg-dark::placeholder {
@@ -180,23 +180,23 @@ select.form-control.bg-dark option {
 }
 
 .btn-outline-light {
-    color: #A7C7E7;
-    border-color: #A7C7E7;
+    color: var(--accent-color);
+    border-color: var(--accent-color);
 }
 
 .btn-outline-light:hover {
-    background-color: #A7C7E7;
-    color: var(--text-color);
+    background-color: var(--accent-color);
+    color: #ffffff;
 }
 
 .btn-outline-danger {
-    color: #F5A6A6;
-    border-color: #F5A6A6;
+    color: #000000;
+    border-color: #000000;
 }
 
 .btn-danger:hover {
-    background-color: #ff6b6b !important;
-    color: white !important;
+    background-color: #000000 !important;
+    color: #ffffff !important;
 }
 
 /* Loading spinner */
@@ -204,41 +204,41 @@ select.form-control.bg-dark option {
     color: var(--accent-color) !important;
 }
 
-/* Status utility classes */
-.text-success { color: var(--success-color) !important; }
-.bg-success { background-color: var(--success-color) !important; }
-.text-warning { color: var(--warning-color) !important; }
-.bg-warning { background-color: var(--warning-color) !important; }
-.text-error { color: var(--error-color) !important; }
-.bg-error { background-color: var(--error-color) !important; }
+/* Status utility classes - using blue, black, white only */
+.text-success { color: var(--accent-color) !important; }
+.bg-success { background-color: var(--accent-color) !important; }
+.text-warning { color: #000000 !important; }
+.bg-warning { background-color: #000000 !important; }
+.text-error { color: #000000 !important; }
+.bg-error { background-color: #000000 !important; }
 
 .alert-success {
-    background-color: rgba(180, 225, 151, 0.1);
-    border-color: var(--success-color);
-    color: #2d5016;
+    background-color: rgba(0, 123, 255, 0.1);
+    border-color: var(--accent-color);
+    color: #000000;
 }
 
 .alert-warning {
-    background-color: rgba(255, 213, 128, 0.1);
-    border-color: var(--warning-color);
-    color: #8b4513;
+    background-color: rgba(0, 0, 0, 0.05);
+    border-color: #000000;
+    color: #000000;
 }
 
 .alert-error {
-    background-color: rgba(245, 166, 166, 0.1);
-    border-color: var(--error-color);
-    color: #8b2635;
+    background-color: rgba(0, 0, 0, 0.05);
+    border-color: #000000;
+    color: #000000;
 }
 
 /* Form validation feedback */
 .form-control.is-valid {
-    border-color: var(--success-color);
-    box-shadow: 0 0 0 0.2rem rgba(180, 225, 151, 0.25);
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
 }
 
 .form-control.is-invalid {
-    border-color: var(--error-color);
-    box-shadow: 0 0 0 0.2rem rgba(245, 166, 166, 0.25);
+    border-color: #000000;
+    box-shadow: 0 0 0 0.2rem rgba(0, 0, 0, 0.25);
 }
 
 .valid-feedback {
@@ -246,7 +246,7 @@ select.form-control.bg-dark option {
     width: 100%;
     margin-top: 0.25rem;
     font-size: 0.875em;
-    color: #2d5016;
+    color: #000000;
 }
 
 .invalid-feedback {
@@ -254,7 +254,7 @@ select.form-control.bg-dark option {
     width: 100%;
     margin-top: 0.25rem;
     font-size: 0.875em;
-    color: #8b2635;
+    color: #000000;
 }
 
 /* Allocation Summary Display */

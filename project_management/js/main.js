@@ -113,11 +113,11 @@ function getResourceUtilizationClass(status) {
 function getUtilizationBadgeClass(status) {
     switch (status) {
         case 'Over-utilized':
-            return 'bg-danger';
+            return 'bg-dark';
         case 'Well-utilized':
-            return 'bg-success';
+            return 'bg-primary';
         case 'Under-utilized':
-            return 'bg-warning text-dark';
+            return 'bg-dark text-white';
         default:
             return 'bg-secondary';
     }
@@ -401,11 +401,11 @@ function createNotificationItem(notification) {
 function getNotificationTypeClass(type) {
     switch (type) {
         case 'over_utilization':
-            return 'bg-danger';
+            return 'bg-dark';
         case 'under_utilization':
-            return 'bg-warning text-dark';
+            return 'bg-dark text-white';
         case 'balancing_recommendation':
-            return 'bg-info';
+            return 'bg-primary';
         case 'system_alert':
             return 'bg-secondary';
         default:
@@ -525,7 +525,7 @@ async function checkForNewNotifications() {
 function showSystemNotification(message) {
     // Create a simple toast notification
     const toast = document.createElement('div');
-    toast.className = 'toast align-items-center text-white bg-info border-0';
+    toast.className = 'toast align-items-center text-white bg-primary border-0';
     toast.setAttribute('role', 'alert');
     toast.innerHTML = `
         <div class="d-flex">

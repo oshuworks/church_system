@@ -182,7 +182,7 @@ function displayResources(resources) {
                 <div class="d-flex align-items-center">
                     <span class="me-2">${formatPercentage(resource.availability)}</span>
                     <div class="progress" style="width: 60px; height: 6px;">
-                        <div class="progress-bar bg-success" style="width: ${resource.availability}%"></div>
+                        <div class="progress-bar bg-primary" style="width: ${resource.availability}%"></div>
                     </div>
                 </div>
             </td>
@@ -285,11 +285,11 @@ function displayUtilizationReport(resources, summary) {
 function getUtilizationStatusBadge(status) {
     switch (status) {
         case 'Over-utilized':
-            return '<span class="badge bg-danger">Over-utilized</span>';
+            return '<span class="badge bg-dark">Over-utilized</span>';
         case 'Well-utilized':
-            return '<span class="badge bg-success">Well-utilized</span>';
+            return '<span class="badge bg-primary">Well-utilized</span>';
         case 'Under-utilized':
-            return '<span class="badge bg-warning text-dark">Under-utilized</span>';
+            return '<span class="badge bg-dark text-white">Under-utilized</span>';
         default:
             return '<span class="badge bg-secondary">Unknown</span>';
     }
@@ -299,11 +299,11 @@ function getUtilizationStatusBadge(status) {
 function getUtilizationProgressBarClass(status) {
     switch (status) {
         case 'Over-utilized':
-            return 'bg-danger';
+            return 'bg-dark';
         case 'Well-utilized':
-            return 'bg-success';
+            return 'bg-primary';
         case 'Under-utilized':
-            return 'bg-warning';
+            return 'bg-dark';
         default:
             return 'bg-secondary';
     }
@@ -636,7 +636,7 @@ function validateAllocationPercent(input) {
                         <strong>Allocation would exceed 100%</strong><br>
                         Current allocation: <span class="fw-bold">${currentTotalAllocation.toFixed(1)}%</span><br>
                         Your input: <span class="fw-bold">${value}%</span><br>
-                        New total: <span class="fw-bold text-danger">${newTotal.toFixed(1)}%</span><br>
+                        New total: <span class="fw-bold text-dark">${newTotal.toFixed(1)}%</span><br>
                         <small class="text-muted">Maximum allowed: 100%</small>
                     `;
                     invalidFeedback.style.display = 'block';
@@ -647,14 +647,14 @@ function validateAllocationPercent(input) {
                     let feedbackHTML = `
                         <strong>Allocation is valid</strong><br>
                         Current allocation: <span class="fw-bold">${currentTotalAllocation.toFixed(1)}%</span><br>
-                        Your input: <span class="fw-bold text-success">${value}%</span><br>
+                        Your input: <span class="fw-bold text-primary">${value}%</span><br>
                         New total: <span class="fw-bold">${newTotal.toFixed(1)}%</span>
                     `;
 
                     if (remainingAllocation > 0) {
                         feedbackHTML += `<br><small class="text-muted">Remaining capacity: ${remainingAllocation.toFixed(1)}%</small>`;
                     } else {
-                        feedbackHTML += `<br><small class="text-warning">⚠️ Fully allocated</small>`;
+                        feedbackHTML += `<br><small class="text-dark">⚠️ Fully allocated</small>`;
                     }
 
                     validFeedback.innerHTML = feedbackHTML;
@@ -675,7 +675,7 @@ function validateAllocationPercent(input) {
         input.classList.add('is-valid');
         validFeedback.innerHTML = `
             <strong>Allocation is valid</strong><br>
-            Your input: <span class="fw-bold text-success">${value}%</span>
+            Your input: <span class="fw-bold text-primary">${value}%</span>
         `;
         validFeedback.style.display = 'block';
     }
@@ -704,17 +704,17 @@ function updateAllocationSummary(currentTotal, newAllocation) {
         // Update progress bar color based on allocation level
         progressBar.className = 'progress-bar';
         if (newTotal > 90) {
-            progressBar.classList.add('bg-danger');
-            availableCapacityText.classList.remove('text-success', 'text-warning');
-            availableCapacityText.classList.add('text-danger');
+            progressBar.classList.add('bg-dark');
+            availableCapacityText.classList.remove('text-primary');
+            availableCapacityText.classList.add('text-dark');
         } else if (newTotal > 70) {
-            progressBar.classList.add('bg-warning');
-            availableCapacityText.classList.remove('text-success', 'text-danger');
-            availableCapacityText.classList.add('text-warning');
+            progressBar.classList.add('bg-dark');
+            availableCapacityText.classList.remove('text-primary', 'text-dark');
+            availableCapacityText.classList.add('text-dark');
         } else {
-            progressBar.classList.add('bg-success');
-            availableCapacityText.classList.remove('text-warning', 'text-danger');
-            availableCapacityText.classList.add('text-success');
+            progressBar.classList.add('bg-primary');
+            availableCapacityText.classList.remove('text-dark');
+            availableCapacityText.classList.add('text-primary');
         }
 
         if (availableCapacity < 0) {
@@ -750,17 +750,17 @@ function displayCurrentAllocationSummary() {
             // Update progress bar color based on allocation level
             progressBar.className = 'progress-bar';
             if (currentTotalAllocation > 90) {
-                progressBar.classList.add('bg-danger');
-                availableCapacityText.classList.remove('text-success', 'text-warning');
-                availableCapacityText.classList.add('text-danger');
+                progressBar.classList.add('bg-dark');
+                availableCapacityText.classList.remove('text-primary');
+                availableCapacityText.classList.add('text-dark');
             } else if (currentTotalAllocation > 70) {
-                progressBar.classList.add('bg-warning');
-                availableCapacityText.classList.remove('text-success', 'text-danger');
-                availableCapacityText.classList.add('text-warning');
+                progressBar.classList.add('bg-dark');
+                availableCapacityText.classList.remove('text-primary', 'text-dark');
+                availableCapacityText.classList.add('text-dark');
             } else {
-                progressBar.classList.add('bg-success');
-                availableCapacityText.classList.remove('text-warning', 'text-danger');
-                availableCapacityText.classList.add('text-success');
+                progressBar.classList.add('bg-primary');
+                availableCapacityText.classList.remove('text-dark');
+                availableCapacityText.classList.add('text-primary');
             }
 
             if (availableCapacity < 0) {
@@ -811,7 +811,7 @@ function displayBalancingRecommendations(recommendations) {
     if (recommendations.over_allocated.length > 0) {
         html += `
             <div class="col-md-4 mb-3">
-                <div class="card bg-danger text-white">
+                <div class="card bg-dark text-white">
                     <div class="card-header">
                         <h6>Over-allocated Resources (${recommendations.summary.over_allocated_count})</h6>
                     </div>
@@ -834,7 +834,7 @@ function displayBalancingRecommendations(recommendations) {
     if (recommendations.under_allocated.length > 0) {
         html += `
             <div class="col-md-4 mb-3">
-                <div class="card bg-warning">
+                <div class="card bg-dark text-white">
                     <div class="card-header">
                         <h6>Under-allocated Resources (${recommendations.summary.under_allocated_count})</h6>
                     </div>
@@ -857,7 +857,7 @@ function displayBalancingRecommendations(recommendations) {
     if (recommendations.well_allocated.length > 0) {
         html += `
             <div class="col-md-4 mb-3">
-                <div class="card bg-success text-white">
+                <div class="card bg-primary text-white">
                     <div class="card-header">
                         <h6>Well-allocated Resources (${recommendations.summary.well_allocated_count})</h6>
                     </div>
@@ -999,11 +999,11 @@ function displayAnalyticsTable(resources) {
 function getAnalyticsStatusBadge(status) {
     switch (status) {
         case 'Over-utilized':
-            return '<span class="badge bg-danger">Over-utilized</span>';
+            return '<span class="badge bg-dark">Over-utilized</span>';
         case 'Well-utilized':
-            return '<span class="badge bg-success">Well-utilized</span>';
+            return '<span class="badge bg-primary">Well-utilized</span>';
         case 'Under-utilized':
-            return '<span class="badge bg-warning text-dark">Under-utilized</span>';
+            return '<span class="badge bg-dark text-white">Under-utilized</span>';
         default:
             return '<span class="badge bg-secondary">Unknown</span>';
     }
