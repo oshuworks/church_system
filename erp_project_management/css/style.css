@@ -1,0 +1,25 @@
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #fefefe;
+    color: #333;
+}
+
+a.nav-link:hover {
+    color: #ffc107 !important;
+}
+
+.btn-primary {
+    background-color: #60c3e6;
+    border-color: #1a6985;
+    color: #000000;
+}
+
+.btn-primary:hover {
+    background-color: #7bd4f5;
+    border-color: #145a73;
+    color: #000000;
+}
+
+.alert {
+    transition: opacity 0.5s ease-in-out;
+}

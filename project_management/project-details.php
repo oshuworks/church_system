@@ -48,12 +48,12 @@
                     </span>
                 </div>
             </div>
-            <div>
+            <div class="d-flex gap-2">
                 <button class="btn btn-primary" onclick="showEditProjectModal()">
-                    <i class="fas fa-edit"></i> Edit Project
+                    <i class="fas fa-edit me-1"></i> Edit Project
                 </button>
-                <a href="index.php" class="btn btn-outline-secondary">
-                    <i class="fas fa-arrow-left"></i> Back to Projects
+                <a href="index.php" class="btn btn-outline-dark">
+                    <i class="fas fa-arrow-left me-1"></i> Back to Projects
                 </a>
             </div>
         </div>
@@ -73,17 +73,17 @@
     <ul class="nav nav-tabs mb-4" id="projectTabs" role="tablist">
         <li class="nav-item" role="presentation">
             <button class="nav-link active" id="wbs-tab" data-bs-toggle="tab" data-bs-target="#wbs-view" type="button" role="tab">
-                <i class="fas fa-sitemap"></i> Work Breakdown Structure
+                <i class="fas fa-sitemap me-1"></i> Work Breakdown Structure
             </button>
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link" id="gantt-tab" data-bs-toggle="tab" data-bs-target="#gantt-view" type="button" role="tab">
-                <i class="fas fa-chart-gantt"></i> Gantt Chart
+                <i class="fas fa-chart-gantt me-1"></i> Gantt Chart
             </button>
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link" id="timeline-tab" data-bs-toggle="tab" data-bs-target="#timeline-view" type="button" role="tab">
-                <i class="fas fa-calendar-alt"></i> Timeline
+                <i class="fas fa-calendar-alt me-1"></i> Timeline
             </button>
         </li>
     </ul>
@@ -97,7 +97,7 @@
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h3>Work Breakdown Structure</h3>
                     <button class="btn btn-primary" onclick="showAddTaskModal()">
-                        <i class="fas fa-plus"></i> Add Task
+                        <i class="fas fa-plus me-1"></i> Add Task
                     </button>
                 </div>
                 
@@ -115,14 +115,14 @@
             <div class="card secondary-card p-4">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h3>Gantt Chart</h3>
-                    <div>
-                        <button class="btn btn-sm btn-outline-secondary" onclick="ganttChart.viewMode('Day')">
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-sm btn-outline-primary" onclick="ganttChart.viewMode('Day')">
                             Day
                         </button>
-                        <button class="btn btn-sm btn-outline-secondary" onclick="ganttChart.viewMode('Week')">
+                        <button class="btn btn-sm btn-outline-primary" onclick="ganttChart.viewMode('Week')">
                             Week
                         </button>
-                        <button class="btn btn-sm btn-outline-secondary" onclick="ganttChart.viewMode('Month')">
+                        <button class="btn btn-sm btn-outline-primary" onclick="ganttChart.viewMode('Month')">
                             Month
                         </button>
                     </div>
@@ -138,8 +138,8 @@
             <div class="card secondary-card p-4">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h3>Project Timeline</h3>
-                    <button class="btn btn-sm btn-outline-secondary" onclick="refreshTimeline()">
-                        <i class="fas fa-sync"></i> Refresh
+                    <button class="btn btn-sm btn-outline-primary" onclick="refreshTimeline()">
+                        <i class="fas fa-sync-alt me-1"></i> Refresh
                     </button>
                 </div>
                 <div id="timeline-container">
@@ -196,9 +196,13 @@
                     </div>
                 </form>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" onclick="saveTask()">Save Task</button>
+            <div class="modal-footer d-flex gap-2">
+                <button type="button" class="btn btn-outline-dark" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i> Cancel
+                </button>
+                <button type="button" class="btn btn-primary" onclick="saveTask()">
+                    <i class="fas fa-save me-1"></i> Save Task
+                </button>
             </div>
         </div>
     </div>
@@ -246,10 +250,16 @@
                     </div>
                 </form>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-danger" onclick="deleteTask()">Delete</button>
-                <button type="button" class="btn btn-primary" onclick="updateTask()">Update Task</button>
+            <div class="modal-footer d-flex gap-2">
+                <button type="button" class="btn btn-outline-dark" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i> Cancel
+                </button>
+                <button type="button" class="btn btn-outline-dark" onclick="deleteTask()">
+                    <i class="fas fa-trash me-1"></i> Delete
+                </button>
+                <button type="button" class="btn btn-primary" onclick="updateTask()">
+                    <i class="fas fa-save me-1"></i> Update Task
+                </button>
             </div>
         </div>
     </div>
@@ -290,9 +300,13 @@
                     </div>
                 </form>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" onclick="updateProject()">Update Project</button>
+            <div class="modal-footer d-flex gap-2">
+                <button type="button" class="btn btn-outline-dark" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i> Cancel
+                </button>
+                <button type="button" class="btn btn-primary" onclick="updateProject()">
+                    <i class="fas fa-save me-1"></i> Update Project
+                </button>
             </div>
         </div>
     </div>
@@ -438,7 +452,7 @@ function renderWBS() {
         </td>`;
         html += `<td>
             <button class="btn btn-sm btn-primary" onclick="editTask(${task.task_id})">
-                <i class="fas fa-edit"></i>
+                <i class="fas fa-edit me-1"></i> Edit
             </button>
         </td>`;
         html += `</tr>`;
@@ -770,7 +784,7 @@ function renderTimeline() {
         html += `<div class="progress mb-2" style="height: 10px;">`;
         html += `<div class="progress-bar ${task.progress_percent === 100 ? 'bg-primary' : 'bg-dark'}" style="width: ${task.progress_percent}%"></div>`;
         html += `</div>`;
-        html += `<button class="btn btn-sm btn-primary" onclick="editTask(${task.task_id})">Edit</button>`;
+        html += `<button class="btn btn-sm btn-primary" onclick="editTask(${task.task_id})"><i class="fas fa-edit me-1"></i> Edit</button>`;
         html += `</div>`;
         html += `</div>`;
     });

@@ -143,13 +143,13 @@ function displayBudgets(budgets) {
                 <td>${statusBadge}</td>
                 <td>
                     <button class="btn btn-sm btn-outline-primary me-2" onclick="viewBudgetDetails(${budget.budget_id})">
-                        View Details
+                        <i class="fas fa-eye me-1"></i> View Details
                     </button>
                     <button class="btn btn-sm btn-outline-warning me-2" onclick="editBudget(${budget.budget_id})">
-                        Edit
+                        <i class="fas fa-edit me-1"></i> Edit
                     </button>
                     <button class="btn btn-sm btn-outline-success" onclick="showAllocationModal(${budget.budget_id}, '${budget.description}')">
-                        Allocate
+                        <i class="fas fa-dollar-sign me-1"></i> Allocate
                     </button>
                 </td>
             </tr>
@@ -181,13 +181,13 @@ function displayBudgetAllocations(allocations) {
                 <td>${statusBadge}</td>
                 <td>
                     <button class="btn btn-sm btn-outline-primary me-2" onclick="viewBudgetDetails(${allocation.budget_id})">
-                        View Details
+                        <i class="fas fa-eye me-1"></i> View Details
                     </button>
                     <button class="btn btn-sm btn-outline-warning me-2" onclick="editBudget(${allocation.budget_id})">
-                        Edit
+                        <i class="fas fa-edit me-1"></i> Edit
                     </button>
                     <button class="btn btn-sm btn-outline-success" onclick="showAllocationModal(${allocation.budget_id}, '${allocation.description}')">
-                        Allocate
+                        <i class="fas fa-dollar-sign me-1"></i> Allocate
                     </button>
                 </td>
             </tr>

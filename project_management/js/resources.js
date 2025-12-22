@@ -189,7 +189,7 @@ function displayResources(resources) {
             <td>${formatCurrency(resource.cost_per_unit)}</td>
             <td>
                 <button class="btn btn-sm btn-outline-primary" onclick="viewResource(${resource.resource_id})">
-                    View
+                    <i class="fas fa-eye me-1"></i> View
                 </button>
             </td>
         </tr>
@@ -984,10 +984,10 @@ function displayAnalyticsTable(resources) {
                 <td>${formatCurrency(resource.cost_per_unit)}</td>
                 <td>
                     <button class="btn btn-sm btn-outline-primary me-1" onclick="viewResource(${resource.resource_id})">
-                        View
+                        <i class="fas fa-eye me-1"></i> View
                     </button>
                     <button class="btn btn-sm btn-warning" onclick="autoBalanceResource(${resource.resource_id})">
-                        Balance
+                        <i class="fas fa-balance-scale me-1"></i> Balance
                     </button>
                 </td>
             </tr>
@@ -1096,12 +1096,12 @@ function createResourceTypesChart(resources) {
                 label: 'Count',
                 data: Object.values(typeData),
                 backgroundColor: [
-                    'rgba(0, 123, 255, 0.8)',
+                    'rgba(136, 208, 230, 0.8)',
                     'rgba(40, 167, 69, 0.8)',
                     'rgba(255, 193, 7, 0.8)'
                 ],
                 borderColor: [
-                    'rgba(0, 123, 255, 1)',
+                    'rgba(136, 208, 230, 1)',
                     'rgba(40, 167, 69, 1)',
                     'rgba(255, 193, 7, 1)'
                 ],

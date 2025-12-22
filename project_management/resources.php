@@ -23,18 +23,25 @@
             <h1>Resource Management</h1>
             <div class="btn-group" role="group">
                 <input type="radio" class="btn-check" name="viewMode" id="listView" autocomplete="off" checked>
-                <label class="btn btn-outline-dark" for="listView" onclick="setViewMode('list')">Resource List</label>
+                <label class="btn btn-outline-dark" for="listView" onclick="setViewMode('list')">
+                    <i class="fas fa-list me-1"></i> Resource List
+                </label>
 
                 <input type="radio" class="btn-check" name="viewMode" id="utilizationView" autocomplete="off">
-                <label class="btn btn-outline-dark" for="utilizationView" onclick="setViewMode('utilization')">Utilization Report</label>
+                <label class="btn btn-outline-dark" for="utilizationView" onclick="setViewMode('utilization')">
+                    <i class="fas fa-chart-pie me-1"></i> Utilization Report
+                </label>
 
                 <input type="radio" class="btn-check" name="viewMode" id="analyticsView" autocomplete="off">
-                <label class="btn btn-outline-dark" for="analyticsView" onclick="setViewMode('analytics')">Analytics Dashboard</label>
+                <label class="btn btn-outline-dark" for="analyticsView" onclick="setViewMode('analytics')">
+                    <i class="fas fa-chart-bar me-1"></i> Analytics Dashboard
+                </label>
             </div>
         </div>
 
-        <div class="mb-3">
-            <input type="text" class="form-control bg-dark text-dark border-secondary" id="searchInput" placeholder="Search resources...">
+        <div class="mb-3 position-relative">
+            <i class="fas fa-search position-absolute" style="left: 15px; top: 50%; transform: translateY(-50%); color: #000000;"></i>
+            <input type="text" class="form-control bg-dark text-dark border-secondary" id="searchInput" placeholder="Search resources..." style="padding-left: 40px;">
         </div>
 
         <div class="table-responsive">
@@ -63,7 +70,7 @@
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h1>Resource Analytics Dashboard</h1>
             <button class="btn btn-outline-dark" onclick="refreshAnalytics()">
-                <i class="fas fa-sync-alt me-2"></i>Refresh
+                <i class="fas fa-sync-alt me-1"></i> Refresh
             </button>
         </div>
 
@@ -253,7 +260,7 @@
     <div class="modal-dialog">
         <div class="modal-content bg-dark border-secondary">
             <div class="modal-header border-secondary">
-                <h5 class="modal-title text-dark">Edit Resource</h5>
+                <h5 class="modal-title">Edit Resource</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
@@ -293,7 +300,7 @@
     <div class="modal-dialog">
         <div class="modal-content bg-dark border-secondary">
             <div class="modal-header border-secondary">
-                <h5 class="modal-title text-dark">Allocate Resource to Task</h5>
+                <h5 class="modal-title">Allocate Resource to Task</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
