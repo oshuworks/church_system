@@ -18,6 +18,52 @@ function clearCharts() {
     }
 }
 
+// Delete resource
+// Show delete resource confirmation modal
+function showDeleteResourceModal() {
+    if (!currentResourceId) {
+        showError('No resource selected');
+        return;
+    }
+    
+    const resourceName = document.getElementById('resource-name').textContent || 'this resource';
+    document.getElementById('deleteConfirmTitle').textContent = 'Delete Resource';
+    document.getElementById('deleteConfirmMessage').textContent = `Are you sure you want to delete "${resourceName}"? This action cannot be undone.`;
+    document.getElementById('deleteConfirmBtn').onclick = confirmDeleteResource;
+    
+    const modal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
+    modal.show();
+}
+
+// Confirm delete resource
+async function confirmDeleteResource() {
+    try {
+        const response = await fetch('api/resource.php', {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ resource_id: currentResourceId })
+        });
+        
+        const data = await response.json();
+        
+        if (data.error) {
+            throw new Error(data.error);
+        }
+        
+        bootstrap.Modal.getInstance(document.getElementById('deleteConfirmModal')).hide();
+        showSuccess('Resource deleted successfully');
+        setTimeout(() => {
+            window.location.href = 'resources.php';
+        }, 1000);
+        
+    } catch (error) {
+        console.error('Error deleting resource:', error);
+        showError('Failed to delete resource: ' + error.message);
+    }
+}
+
 // Refresh analytics
 function refreshAnalytics() {
     clearCharts();
@@ -384,8 +430,8 @@ function displayAllocations(allocations) {
             <td>${allocation.start_date || 'N/A'}</td>
             <td>${allocation.end_date || 'N/A'}</td>
             <td>
-                <button class="btn btn-sm btn-danger text-dark" onclick="removeAllocation(${allocation.task_id})">
-                    Remove
+                <button class="btn btn-sm btn-outline-dark" onclick="removeAllocation(${allocation.task_id})">
+                    <i class="fas fa-times me-1"></i> Remove
                 </button>
             </td>
         </tr>
@@ -1151,5 +1197,51 @@ function clearCharts() {
     if (resourceTypesChartInstance) {
         resourceTypesChartInstance.destroy();
         resourceTypesChartInstance = null;
+    }
+}
+
+// Delete resource
+// Show delete resource confirmation modal
+function showDeleteResourceModal() {
+    if (!currentResourceId) {
+        showError('No resource selected');
+        return;
+    }
+    
+    const resourceName = document.getElementById('resource-name').textContent || 'this resource';
+    document.getElementById('deleteConfirmTitle').textContent = 'Delete Resource';
+    document.getElementById('deleteConfirmMessage').textContent = `Are you sure you want to delete "${resourceName}"? This action cannot be undone.`;
+    document.getElementById('deleteConfirmBtn').onclick = confirmDeleteResource;
+    
+    const modal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
+    modal.show();
+}
+
+// Confirm delete resource
+async function confirmDeleteResource() {
+    try {
+        const response = await fetch('api/resource.php', {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ resource_id: currentResourceId })
+        });
+        
+        const data = await response.json();
+        
+        if (data.error) {
+            throw new Error(data.error);
+        }
+        
+        bootstrap.Modal.getInstance(document.getElementById('deleteConfirmModal')).hide();
+        showSuccess('Resource deleted successfully');
+        setTimeout(() => {
+            window.location.href = 'resources.php';
+        }, 1000);
+        
+    } catch (error) {
+        console.error('Error deleting resource:', error);
+        showError('Failed to delete resource: ' + error.message);
     }
 }

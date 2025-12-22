@@ -7,6 +7,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <!-- Bootstrap CDN -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    
     <link rel="stylesheet" href="css/resources.css" />
     <link rel="stylesheet" href="css/navbar.css" />
     <!-- Chart.js CDN -->
@@ -20,7 +24,7 @@
     <!-- Resource Listing (shown when no resource_id provided) -->
     <div id="resource-listing" class="card secondary-card p-4">
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1>Resource Management</h1>
+            <h1><i class="fas fa-users me-2"></i>Resource Management</h1>
             <div class="btn-group" role="group">
                 <input type="radio" class="btn-check" name="viewMode" id="listView" autocomplete="off" checked>
                 <label class="btn btn-outline-dark" for="listView" onclick="setViewMode('list')">
@@ -68,7 +72,7 @@
     <!-- Analytics Dashboard (shown when analytics view is selected) -->
     <div id="analytics-dashboard" class="card secondary-card p-4 d-none">
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1>Resource Analytics Dashboard</h1>
+            <h1><i class="fas fa-chart-bar me-2"></i>Resource Analytics Dashboard</h1>
             <button class="btn btn-outline-dark" onclick="refreshAnalytics()">
                 <i class="fas fa-sync-alt me-1"></i> Refresh
             </button>
@@ -114,13 +118,13 @@
         <div class="row">
             <div class="col-md-8 mb-4">
                 <div class="card bg-dark p-3">
-                    <h5 class="text-dark">Resource Utilization Chart</h5>
+                    <h5 class="text-dark"><i class="fas fa-chart-pie me-2"></i>Resource Utilization Chart</h5>
                     <canvas id="utilizationChart" width="400" height="200"></canvas>
                 </div>
             </div>
             <div class="col-md-4 mb-4">
                 <div class="card bg-dark p-3">
-                    <h5 class="text-dark">Resource Types Distribution</h5>
+                    <h5 class="text-dark"><i class="fas fa-chart-doughnut me-2"></i>Resource Types Distribution</h5>
                     <canvas id="resourceTypesChart" width="400" height="200"></canvas>
                 </div>
             </div>
@@ -129,7 +133,7 @@
         <div class="row">
             <div class="col-md-12">
                 <div class="card bg-dark p-3">
-                    <h5 class="text-dark">Detailed Utilization Table</h5>
+                    <h5 class="text-dark"><i class="fas fa-table me-2"></i>Detailed Utilization Table</h5>
                     <div class="table-responsive">
                         <table class="table table-dark">
                             <thead>
@@ -171,17 +175,22 @@
                         <button class="btn btn-outline-dark me-3" onclick="showResourceList()">
                             <i class="fas fa-arrow-left me-2"></i>Back to Resources
                         </button>
-                        <h1 id="resource-name">Resource Details</h1>
+                        <h1><i class="fas fa-box me-2"></i><span id="resource-name">Resource Details</span></h1>
                     </div>
-                    <button class="btn accent-btn text-dark" data-bs-toggle="modal" data-bs-target="#editResourceModal">
-                        Edit Resource
-                    </button>
+                    <div class="d-flex gap-2">
+                        <button class="btn accent-btn text-dark" data-bs-toggle="modal" data-bs-target="#editResourceModal">
+                            Edit Resource
+                        </button>
+                        <button class="btn btn-outline-dark" onclick="showDeleteResourceModal()">
+                            <i class="fas fa-trash me-1"></i> Delete Resource
+                        </button>
+                    </div>
                 </div>
 
                 <div class="row mb-4">
                     <div class="col-md-6">
                         <div class="card bg-dark p-3">
-                            <h5 class="text-dark">Resource Information</h5>
+                            <h5 class="text-dark"><i class="fas fa-info-circle me-2"></i>Resource Information</h5>
                             <div class="row">
                                 <div class="col-sm-4"><strong class="text-black">Type:</strong></div>
                                 <div class="col-sm-8" id="resource-type">-</div>
@@ -203,7 +212,7 @@
                     </div>
                     <div class="col-md-6">
                         <div class="card bg-dark p-3">
-                            <h5 class="text-darl">Quick Actions</h5>
+                            <h5 class="text-dark"><i class="fas fa-bolt me-2"></i>Quick Actions</h5>
                             <button class="btn accent-btn w-100 mb-2 text-dark" data-bs-toggle="modal" data-bs-target="#allocateModal">
                                 Allocate to Task
                             </button>
@@ -218,7 +227,7 @@
                 </div>
 
                 <div class="card bg-dark p-3">
-                    <h5 class="text-dark">Current Allocations</h5>
+                    <h5 class="text-dark"><i class="fas fa-tasks me-2"></i>Current Allocations</h5>
                     <div class="table-responsive">
                         <table class="table table-dark">
                             <thead>
@@ -241,7 +250,7 @@
                 </div>
 
                 <div class="card bg-dark p-3 mt-3" id="balancing-recommendations" style="display: none;">
-                    <h5 class="text-dark">Resource Balancing Recommendations</h5>
+                    <h5 class="text-dark"><i class="fas fa-balance-scale me-2"></i>Resource Balancing Recommendations</h5>
                     <div class="row">
                         <!-- Balancing recommendations will be populated here -->
                     </div>
@@ -260,7 +269,7 @@
     <div class="modal-dialog">
         <div class="modal-content bg-dark border-secondary">
             <div class="modal-header border-secondary">
-                <h5 class="modal-title">Edit Resource</h5>
+                <h5 class="modal-title"><i class="fas fa-edit me-2"></i>Edit Resource</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
@@ -295,12 +304,40 @@
     </div>
 </div>
 
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark border-secondary">
+            <div class="modal-header border-secondary border-0 pb-0">
+                <div class="w-100 text-center">
+                    <div class="mb-3">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 4rem; color: #60c3e6;"></i>
+                    </div>
+                    <h5 class="modal-title text-dark" id="deleteConfirmTitle">Confirm Deletion</h5>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <p class="mb-0 text-dark" id="deleteConfirmMessage">Are you sure you want to delete this item? This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer border-secondary border-0 justify-content-center gap-3">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i> Cancel
+                </button>
+                <button type="button" class="btn accent-btn text-dark" id="deleteConfirmBtn" onclick="confirmDeleteResource()">
+                    <i class="fas fa-trash me-1"></i> Delete
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Allocate to Task Modal -->
 <div class="modal fade" id="allocateModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content bg-dark border-secondary">
             <div class="modal-header border-secondary">
-                <h5 class="modal-title">Allocate Resource to Task</h5>
+                <h5 class="modal-title"><i class="fas fa-link me-2"></i>Allocate Resource to Task</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">

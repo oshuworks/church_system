@@ -71,9 +71,11 @@ function ensureTablesExist($conn) {
             start_date DATE,
             end_date DATE,
             dependency_task_id INT DEFAULT NULL,
+            parent_task_id INT DEFAULT NULL,
             progress_percent INT DEFAULT 0,
             FOREIGN KEY (project_id) REFERENCES projects(project_id) ON DELETE CASCADE,
-            FOREIGN KEY (dependency_task_id) REFERENCES tasks(task_id) ON DELETE SET NULL
+            FOREIGN KEY (dependency_task_id) REFERENCES tasks(task_id) ON DELETE SET NULL,
+            FOREIGN KEY (parent_task_id) REFERENCES tasks(task_id) ON DELETE CASCADE
         )");
         
         // 4. Budgets (depends on projects)
@@ -139,4 +141,11 @@ function ensureTablesExist($conn) {
 
 // Ensure tables exist
 ensureTablesExist($conn);
+
+// Migrate: Add parent_task_id column if it doesn't exist
+$result = $conn->query("SHOW COLUMNS FROM tasks LIKE 'parent_task_id'");
+if ($result->num_rows == 0) {
+    $conn->query("ALTER TABLE tasks ADD COLUMN parent_task_id INT DEFAULT NULL AFTER dependency_task_id");
+    $conn->query("ALTER TABLE tasks ADD FOREIGN KEY (parent_task_id) REFERENCES tasks(task_id) ON DELETE CASCADE");
+}
 ?>

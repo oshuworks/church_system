@@ -221,8 +221,8 @@ function getBudgetStatusBadge(status) {
 function showAllocationModal(budgetId, budgetDescription) {
     currentBudgetId = budgetId;
     document.getElementById('budgetSelect').value = budgetId;
-    document.getElementById('allocateBudgetModal').querySelector('.modal-title').textContent =
-        `Allocate Budget: ${budgetDescription}`;
+    document.getElementById('allocateBudgetModal').querySelector('.modal-title').innerHTML =
+        `<i class="fas fa-hand-holding-usd me-2"></i>Allocate Budget: ${budgetDescription}`;
 
     loadTasksForAllocation();
     loadResourcesForAllocation();

@@ -10,6 +10,10 @@
     
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    
+    <!-- Flatpickr -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
     <!-- Frappe Gantt -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.css" />
@@ -31,7 +35,7 @@
     <div id="project-header" class="card secondary-card p-4 mb-4">
         <div class="d-flex justify-content-between align-items-start">
             <div>
-                <h1 id="project-name">Loading...</h1>
+                <h1><i class="fas fa-project-diagram me-2"></i><span id="project-name">Loading...</span></h1>
                 <p id="project-description" class="text-muted">Loading project details...</p>
                 <div class="mt-3">
                     <span class="badge bg-primary me-2">
@@ -95,7 +99,7 @@
         <div class="tab-pane fade show active" id="wbs-view" role="tabpanel">
             <div class="card secondary-card p-4">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h3>Work Breakdown Structure</h3>
+                    <h3><i class="fas fa-sitemap me-2"></i>Work Breakdown Structure</h3>
                     <button class="btn btn-primary" onclick="showAddTaskModal()">
                         <i class="fas fa-plus me-1"></i> Add Task
                     </button>
@@ -114,7 +118,7 @@
         <div class="tab-pane fade" id="gantt-view" role="tabpanel">
             <div class="card secondary-card p-4">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h3>Gantt Chart</h3>
+                    <h3><i class="fas fa-chart-gantt me-2"></i>Gantt Chart</h3>
                     <div class="d-flex gap-2">
                         <button class="btn btn-sm btn-outline-primary" onclick="ganttChart.viewMode('Day')">
                             Day
@@ -137,7 +141,7 @@
         <div class="tab-pane fade" id="timeline-view" role="tabpanel">
             <div class="card secondary-card p-4">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h3>Project Timeline</h3>
+                    <h3><i class="fas fa-timeline me-2"></i>Project Timeline</h3>
                     <button class="btn btn-sm btn-outline-primary" onclick="refreshTimeline()">
                         <i class="fas fa-sync-alt me-1"></i> Refresh
                     </button>
@@ -159,12 +163,13 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Add New Task</h5>
+                <h5 class="modal-title"><i class="fas fa-plus-circle me-2"></i>Add New Task</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <form id="addTaskForm">
                     <input type="hidden" id="task-project-id" name="project_id">
+                    <input type="hidden" id="task-parent-id" name="parent_task_id">
                     <div class="mb-3">
                         <label class="form-label">Task Name *</label>
                         <input type="text" class="form-control" id="task-name" name="name" required>
@@ -208,12 +213,40 @@
     </div>
 </div>
 
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0 pb-0">
+                <div class="w-100 text-center">
+                    <div class="mb-3">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 4rem; color: #1a6985;"></i>
+                    </div>
+                    <h5 class="modal-title" id="deleteConfirmTitle">Confirm Deletion</h5>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <p class="mb-0" id="deleteConfirmMessage">Are you sure you want to delete this item? This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer border-0 justify-content-center gap-3">
+                <button type="button" class="btn btn-outline-dark" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i> Cancel
+                </button>
+                <button type="button" class="btn" id="deleteConfirmBtn" style="background-color: #1a6985; color: #ffffff;" onclick="confirmDelete()">
+                    <i class="fas fa-trash me-1"></i> Delete
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Edit Task Modal -->
 <div class="modal fade" id="editTaskModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Edit Task</h5>
+                <h5 class="modal-title"><i class="fas fa-edit me-2"></i>Edit Task</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
@@ -254,7 +287,7 @@
                 <button type="button" class="btn btn-outline-dark" data-bs-dismiss="modal">
                     <i class="fas fa-times me-1"></i> Cancel
                 </button>
-                <button type="button" class="btn btn-outline-dark" onclick="deleteTask()">
+                <button type="button" class="btn btn-outline-dark" onclick="showDeleteTaskModalFromForm()">
                     <i class="fas fa-trash me-1"></i> Delete
                 </button>
                 <button type="button" class="btn btn-primary" onclick="updateTask()">
@@ -270,7 +303,7 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Edit Project</h5>
+                <h5 class="modal-title"><i class="fas fa-edit me-2"></i>Edit Project</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
@@ -339,6 +372,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     loadProjectDetails();
     
+    // Initialize date pickers
+    initializeTaskDatePickers();
+    
     // Setup tab switching
     const tabButtons = document.querySelectorAll('#projectTabs button[data-bs-toggle="tab"]');
     tabButtons.forEach(button => {
@@ -351,6 +387,45 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 });
+
+// Initialize date pickers for tasks
+function initializeTaskDatePickers() {
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Task start date
+    window.taskStartDatePicker = flatpickr('#task-start-date', {
+        minDate: today,
+        dateFormat: 'Y-m-d',
+        onChange: function(selectedDates, dateStr, instance) {
+            if (dateStr && window.taskEndDatePicker) {
+                window.taskEndDatePicker.set('minDate', dateStr);
+            }
+        }
+    });
+    
+    // Task end date
+    window.taskEndDatePicker = flatpickr('#task-end-date', {
+        minDate: today,
+        dateFormat: 'Y-m-d'
+    });
+    
+    // Edit task start date
+    window.editTaskStartDatePicker = flatpickr('#edit-task-start-date', {
+        minDate: today,
+        dateFormat: 'Y-m-d',
+        onChange: function(selectedDates, dateStr, instance) {
+            if (dateStr && window.editTaskEndDatePicker) {
+                window.editTaskEndDatePicker.set('minDate', dateStr);
+            }
+        }
+    });
+    
+    // Edit task end date
+    window.editTaskEndDatePicker = flatpickr('#edit-task-end-date', {
+        minDate: today,
+        dateFormat: 'Y-m-d'
+    });
+}
 
 // Load project details
 async function loadProjectDetails() {
@@ -410,61 +485,219 @@ function renderWBS() {
         return;
     }
     
-    // Group tasks by dependency level
+    // Build task map for dependency lookup
     const taskMap = new Map();
-    const rootTasks = [];
-    
     currentTasks.forEach(task => {
         taskMap.set(task.task_id, task);
     });
     
+    // Separate parent tasks and subtasks
+    const parentTasks = currentTasks.filter(task => !task.parent_task_id);
+    const subtasksMap = new Map();
     currentTasks.forEach(task => {
-        if (!task.dependency_task_id) {
-            rootTasks.push(task);
+        if (task.parent_task_id) {
+            if (!subtasksMap.has(task.parent_task_id)) {
+                subtasksMap.set(task.parent_task_id, []);
+            }
+            subtasksMap.get(task.parent_task_id).push(task);
         }
     });
     
-    // Build task tree HTML
-    let html = '<div class="table-responsive"><table class="table table-hover">';
-    html += '<thead><tr>';
-    html += '<th>Task</th><th>Description</th><th>Start Date</th><th>End Date</th><th>Dependency</th><th>Progress</th><th>Actions</th>';
-    html += '</tr></thead><tbody>';
+    // Render tasks as cards
+    let html = '<div class="row g-4">';
     
-    currentTasks.forEach(task => {
+    parentTasks.forEach(task => {
         const progressClass = task.progress_percent === 100 ? 'bg-primary' : 
-                             task.progress_percent > 0 ? 'bg-dark' : 'bg-secondary';
-        const dependencyText = task.dependency_task_name ? 
-            `<span class="badge bg-primary">${task.dependency_task_name}</span>` : 
-            '<span class="text-muted">None</span>';
+                             task.progress_percent >= 75 ? 'bg-success' :
+                             task.progress_percent >= 50 ? 'bg-info' :
+                             task.progress_percent >= 25 ? 'bg-warning' : 'bg-secondary';
+        const dependencyTask = task.dependency_task_id ? taskMap.get(task.dependency_task_id) : null;
+        const subtasks = subtasksMap.get(task.task_id) || [];
+        const hasSubtasks = subtasks.length > 0;
         
-        html += `<tr data-task-id="${task.task_id}">`;
-        html += `<td><strong>${escapeHtml(task.name)}</strong></td>`;
-        html += `<td>${escapeHtml(task.description || '-')}</td>`;
-        html += `<td>${task.start_date || '-'}</td>`;
-        html += `<td>${task.end_date || '-'}</td>`;
-        html += `<td>${dependencyText}</td>`;
-        html += `<td>
-            <div class="progress" style="height: 20px;">
-                <div class="progress-bar ${progressClass}" style="width: ${task.progress_percent}%">
-                    ${task.progress_percent}%
+        html += `<div class="col-md-6 col-lg-4">
+            <div class="card h-100 shadow-sm border-secondary">
+                <div class="card-header bg-white border-bottom">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-tasks me-2" style="color: #1a6985;"></i>
+                            ${escapeHtml(task.name)}
+                        </h5>
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-outline-dark" type="button" data-bs-toggle="dropdown">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="#" onclick="editTask(${task.task_id})">
+                                    <i class="fas fa-edit me-2"></i> Edit
+                                </a></li>
+                                <li><a class="dropdown-item" href="#" onclick="showAddSubtaskModal(${task.task_id})">
+                                    <i class="fas fa-plus-circle me-2"></i> Add Subtask
+                                </a></li>
+                                <li><a class="dropdown-item" href="#" onclick="showDeleteTaskModal(${task.task_id}, '${escapeHtml(task.name)}', ${hasSubtasks})">
+                                    <i class="fas fa-trash me-2"></i> Delete
+                                </a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="card-text text-muted small mb-3">
+                        ${escapeHtml(task.description || 'No description')}
+                    </p>
+                    
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <small class="text-muted"><i class="fas fa-calendar-alt me-1"></i>Start:</small>
+                            <small class="fw-semibold">${task.start_date ? new Date(task.start_date).toLocaleDateString() : 'Not set'}</small>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <small class="text-muted"><i class="fas fa-calendar-check me-1"></i>End:</small>
+                            <small class="fw-semibold">${task.end_date ? new Date(task.end_date).toLocaleDateString() : 'Not set'}</small>
+                        </div>
+                        ${dependencyTask ? `
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <small class="text-muted"><i class="fas fa-link me-1"></i>Depends on:</small>
+                            <span class="badge bg-primary">${escapeHtml(dependencyTask.name)}</span>
+                        </div>
+                        ` : ''}
+                        ${hasSubtasks ? `
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <small class="text-muted"><i class="fas fa-list-ul me-1"></i>Subtasks:</small>
+                            <span class="badge bg-info">${subtasks.length}</span>
+                        </div>
+                        ` : ''}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <small class="text-muted fw-semibold">Progress:</small>
+                            <span class="badge ${progressClass} text-white">${task.progress_percent}%</span>
+                            ${hasSubtasks ? '<small class="text-muted"><i class="fas fa-info-circle" title="Progress calculated from subtasks"></i></small>' : ''}
+                        </div>
+                        <div class="progress mb-2" style="height: 25px;">
+                            <div class="progress-bar ${progressClass}" style="width: ${task.progress_percent}%">
+                                ${task.progress_percent}%
+                            </div>
+                        </div>
+                        ${hasSubtasks ? `
+                        <div class="alert alert-info small mb-0">
+                            <i class="fas fa-info-circle me-1"></i>Progress is calculated from subtasks
+                        </div>
+                        ` : `
+                        <div class="progress-toggle-buttons">
+                            <div class="btn-group btn-group-sm w-100" role="group">
+                                <button type="button" class="btn ${task.progress_percent === 0 ? 'btn-primary' : 'btn-outline-dark'}" 
+                                        onclick="updateTaskProgress(${task.task_id}, 0)" title="0%">
+                                    0%
+                                </button>
+                                <button type="button" class="btn ${task.progress_percent === 25 ? 'btn-primary' : 'btn-outline-dark'}" 
+                                        onclick="updateTaskProgress(${task.task_id}, 25)" title="25%">
+                                    25%
+                                </button>
+                                <button type="button" class="btn ${task.progress_percent === 50 ? 'btn-primary' : 'btn-outline-dark'}" 
+                                        onclick="updateTaskProgress(${task.task_id}, 50)" title="50%">
+                                    50%
+                                </button>
+                                <button type="button" class="btn ${task.progress_percent === 75 ? 'btn-primary' : 'btn-outline-dark'}" 
+                                        onclick="updateTaskProgress(${task.task_id}, 75)" title="75%">
+                                    75%
+                                </button>
+                                <button type="button" class="btn ${task.progress_percent === 100 ? 'btn-primary' : 'btn-outline-dark'}" 
+                                        onclick="updateTaskProgress(${task.task_id}, 100)" title="100%">
+                                    100%
+                                </button>
+                            </div>
+                        </div>
+                        `}
+                    </div>
+                    
+                    ${hasSubtasks ? `
+                    <div class="subtasks-container mt-3">
+                        <h6 class="mb-2"><i class="fas fa-list-ul me-2"></i>Subtasks:</h6>
+                        ${subtasks.map(subtask => {
+                            const subtaskProgressClass = subtask.progress_percent === 100 ? 'bg-primary' : 
+                                                         subtask.progress_percent >= 75 ? 'bg-success' :
+                                                         subtask.progress_percent >= 50 ? 'bg-info' :
+                                                         subtask.progress_percent >= 25 ? 'bg-warning' : 'bg-secondary';
+                            return `
+                            <div class="subtask-card border rounded p-2 mb-2" style="background-color: #f8f9fa;">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div class="flex-grow-1">
+                                        <strong><i class="fas fa-circle-notch me-1" style="font-size: 0.6em;"></i>${escapeHtml(subtask.name)}</strong>
+                                        <div class="progress mt-2" style="height: 20px;">
+                                            <div class="progress-bar ${subtaskProgressClass}" style="width: ${subtask.progress_percent}%">
+                                                ${subtask.progress_percent}%
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-outline-dark" type="button" data-bs-toggle="dropdown">
+                                            <i class="fas fa-ellipsis-v"></i>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end">
+                                            <li><a class="dropdown-item" href="#" onclick="editTask(${subtask.task_id})">
+                                                <i class="fas fa-edit me-2"></i> Edit
+                                            </a></li>
+                                            <li><a class="dropdown-item" href="#" onclick="showDeleteTaskModal(${subtask.task_id}, '${escapeHtml(subtask.name)}', false)">
+                                                <i class="fas fa-trash me-2"></i> Delete
+                                            </a></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <div class="btn-group btn-group-sm w-100" role="group">
+                                    <button type="button" class="btn ${subtask.progress_percent === 0 ? 'btn-primary' : 'btn-outline-dark'}" 
+                                            onclick="updateTaskProgress(${subtask.task_id}, 0)" title="0%">
+                                        0%
+                                    </button>
+                                    <button type="button" class="btn ${subtask.progress_percent === 25 ? 'btn-primary' : 'btn-outline-dark'}" 
+                                            onclick="updateTaskProgress(${subtask.task_id}, 25)" title="25%">
+                                        25%
+                                    </button>
+                                    <button type="button" class="btn ${subtask.progress_percent === 50 ? 'btn-primary' : 'btn-outline-dark'}" 
+                                            onclick="updateTaskProgress(${subtask.task_id}, 50)" title="50%">
+                                        50%
+                                    </button>
+                                    <button type="button" class="btn ${subtask.progress_percent === 75 ? 'btn-primary' : 'btn-outline-dark'}" 
+                                            onclick="updateTaskProgress(${subtask.task_id}, 75)" title="75%">
+                                        75%
+                                    </button>
+                                    <button type="button" class="btn ${subtask.progress_percent === 100 ? 'btn-primary' : 'btn-outline-dark'}" 
+                                            onclick="updateTaskProgress(${subtask.task_id}, 100)" title="100%">
+                                        100%
+                                    </button>
+                                </div>
+                            </div>
+                            `;
+                        }).join('')}
+                    </div>
+                    ` : ''}
                 </div>
             </div>
-        </td>`;
-        html += `<td>
-            <button class="btn btn-sm btn-primary" onclick="editTask(${task.task_id})">
-                <i class="fas fa-edit me-1"></i> Edit
-            </button>
-        </td>`;
-        html += `</tr>`;
+        </div>`;
     });
     
-    html += '</tbody></table></div>';
+    html += '</div>';
     container.innerHTML = html;
+}
+
+// Update task type label
+function updateTaskTypeLabel() {
+    const dependencySelect = document.getElementById('task-dependency');
+    const modalTitle = document.querySelector('#addTaskModal .modal-title');
+    if (dependencySelect && modalTitle) {
+        if (dependencySelect.value) {
+            modalTitle.innerHTML = '<i class="fas fa-plus-circle me-2"></i>Add New Sub-task';
+        } else {
+            modalTitle.innerHTML = '<i class="fas fa-plus-circle me-2"></i>Add New Task';
+        }
+    }
 }
 
 // Show add task modal
 function showAddTaskModal() {
     document.getElementById('task-project-id').value = currentProjectId;
+    document.getElementById('task-parent-id').value = '';
     document.getElementById('task-name').value = '';
     document.getElementById('task-description').value = '';
     document.getElementById('task-start-date').value = '';
@@ -472,11 +705,69 @@ function showAddTaskModal() {
     document.getElementById('task-dependency').value = '';
     document.getElementById('task-progress').value = '0';
     
-    // Populate dependency dropdown
+    // Update modal title
+    const modalTitle = document.querySelector('#addTaskModal .modal-title');
+    if (modalTitle) {
+        modalTitle.innerHTML = '<i class="fas fa-plus-circle me-2"></i>Add New Task';
+    }
+    
+    // Populate dependency dropdown (only parent tasks)
     const dependencySelect = document.getElementById('task-dependency');
     dependencySelect.innerHTML = '<option value="">No dependency</option>';
     currentTasks.forEach(task => {
-        dependencySelect.innerHTML += `<option value="${task.task_id}">${task.name}</option>`;
+        if (!task.parent_task_id) {
+            dependencySelect.innerHTML += `<option value="${task.task_id}">${task.name}</option>`;
+        }
+    });
+    
+    // Set date restrictions based on project timeline
+    const today = new Date().toISOString().split('T')[0];
+    const projectStartDate = currentProject?.start_date || today;
+    const projectEndDate = currentProject?.end_date;
+    
+    const taskStartMin = projectStartDate > today ? projectStartDate : today;
+    
+    if (window.taskStartDatePicker) {
+        window.taskStartDatePicker.setDate(null);
+        window.taskStartDatePicker.set('minDate', taskStartMin);
+        window.taskStartDatePicker.set('maxDate', projectEndDate || null);
+    }
+    
+    if (window.taskEndDatePicker) {
+        window.taskEndDatePicker.setDate(null);
+        window.taskEndDatePicker.set('minDate', taskStartMin);
+        window.taskEndDatePicker.set('maxDate', projectEndDate || null);
+    }
+    
+    const modal = new bootstrap.Modal(document.getElementById('addTaskModal'));
+    modal.show();
+}
+
+// Show add subtask modal
+function showAddSubtaskModal(parentTaskId) {
+    document.getElementById('task-project-id').value = currentProjectId;
+    document.getElementById('task-parent-id').value = parentTaskId;
+    document.getElementById('task-name').value = '';
+    document.getElementById('task-description').value = '';
+    document.getElementById('task-start-date').value = '';
+    document.getElementById('task-end-date').value = '';
+    document.getElementById('task-dependency').value = '';
+    document.getElementById('task-progress').value = '0';
+    
+    // Update modal title
+    const modalTitle = document.querySelector('#addTaskModal .modal-title');
+    if (modalTitle) {
+        const parentTask = currentTasks.find(t => t.task_id == parentTaskId);
+        modalTitle.innerHTML = `<i class="fas fa-plus-circle me-2"></i>Add Subtask to "${parentTask ? escapeHtml(parentTask.name) : 'Task'}"`;
+    }
+    
+    // Populate dependency dropdown (only parent tasks, excluding the parent task itself)
+    const dependencySelect = document.getElementById('task-dependency');
+    dependencySelect.innerHTML = '<option value="">No dependency</option>';
+    currentTasks.forEach(task => {
+        if (!task.parent_task_id && task.task_id != parentTaskId) {
+            dependencySelect.innerHTML += `<option value="${task.task_id}">${task.name}</option>`;
+        }
     });
     
     const modal = new bootstrap.Modal(document.getElementById('addTaskModal'));
@@ -499,6 +790,7 @@ async function saveTask() {
         start_date: formData.get('start_date') || null,
         end_date: formData.get('end_date') || null,
         dependency_task_id: formData.get('dependency_task_id') ? parseInt(formData.get('dependency_task_id')) : null,
+        parent_task_id: formData.get('parent_task_id') ? parseInt(formData.get('parent_task_id')) : null,
         progress_percent: parseInt(formData.get('progress_percent')) || 0
     };
     
@@ -550,6 +842,36 @@ async function editTask(taskId) {
         }
     });
     
+    // Set date restrictions based on task type (subtask or regular task)
+    const today = new Date().toISOString().split('T')[0];
+    let minDate = today;
+    let maxDate = null;
+    
+    if (task.parent_task_id) {
+        // This is a subtask - limit to parent task dates
+        const parentTask = currentTasks.find(t => t.task_id == task.parent_task_id);
+        if (parentTask) {
+            const parentStartDate = parentTask.start_date || today;
+            minDate = parentStartDate > today ? parentStartDate : today;
+            maxDate = parentTask.end_date || null;
+        }
+    } else {
+        // Regular task - limit to project dates
+        const projectStartDate = currentProject?.start_date || today;
+        minDate = projectStartDate > today ? projectStartDate : today;
+        maxDate = currentProject?.end_date || null;
+    }
+    
+    if (window.editTaskStartDatePicker) {
+        window.editTaskStartDatePicker.set('minDate', minDate);
+        window.editTaskStartDatePicker.set('maxDate', maxDate);
+    }
+    
+    if (window.editTaskEndDatePicker) {
+        window.editTaskEndDatePicker.set('minDate', minDate);
+        window.editTaskEndDatePicker.set('maxDate', maxDate);
+    }
+    
     const modal = new bootstrap.Modal(document.getElementById('editTaskModal'));
     modal.show();
 }
@@ -593,14 +915,30 @@ async function updateTask() {
     }
 }
 
-// Delete task
-async function deleteTask() {
-    if (!confirm('Are you sure you want to delete this task? This action cannot be undone.')) {
-        return;
-    }
+// Show delete task confirmation modal
+let pendingDeleteTaskId = null;
+function showDeleteTaskModal(taskId, taskName, hasSubTasks = false) {
+    pendingDeleteTaskId = taskId;
+    document.getElementById('deleteConfirmTitle').textContent = 'Delete Task';
+    const message = hasSubTasks 
+        ? `Are you sure you want to delete "${taskName}"? This will also delete all its sub-tasks. This action cannot be undone.`
+        : `Are you sure you want to delete "${taskName}"? This action cannot be undone.`;
+    document.getElementById('deleteConfirmMessage').textContent = message;
+    document.getElementById('deleteConfirmBtn').onclick = () => confirmDeleteTask(taskId);
     
+    const modal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
+    modal.show();
+}
+
+// Show delete task modal from edit form
+function showDeleteTaskModalFromForm() {
     const taskId = document.getElementById('edit-task-id').value;
-    
+    const taskName = document.getElementById('edit-task-name').value;
+    showDeleteTaskModal(parseInt(taskId), taskName, false);
+}
+
+// Confirm delete task
+async function confirmDeleteTask(taskId) {
     try {
         const response = await fetch('api/task.php', {
             method: 'DELETE',
@@ -616,11 +954,56 @@ async function deleteTask() {
             throw new Error(data.error);
         }
         
-        bootstrap.Modal.getInstance(document.getElementById('editTaskModal')).hide();
+        bootstrap.Modal.getInstance(document.getElementById('deleteConfirmModal')).hide();
+        const editModal = bootstrap.Modal.getInstance(document.getElementById('editTaskModal'));
+        if (editModal) {
+            editModal.hide();
+        }
         loadProjectDetails();
         
     } catch (error) {
         alert('Failed to delete task: ' + error.message);
+    }
+}
+
+// Update task progress
+async function updateTaskProgress(taskId, progress) {
+    const task = currentTasks.find(t => t.task_id == taskId);
+    if (!task) {
+        alert('Task not found');
+        return;
+    }
+    
+    try {
+        const response = await fetch('api/task.php', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                task_id: parseInt(taskId),
+                name: task.name,
+                description: task.description || '',
+                start_date: task.start_date,
+                end_date: task.end_date,
+                dependency_task_id: task.dependency_task_id,
+                parent_task_id: task.parent_task_id || null,
+                progress_percent: progress
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.error) {
+            throw new Error(data.error);
+        }
+        
+        // Reload project details to refresh display
+        loadProjectDetails();
+        
+    } catch (error) {
+        console.error('Error updating task progress:', error);
+        alert('Failed to update task progress: ' + error.message);
     }
 }
 

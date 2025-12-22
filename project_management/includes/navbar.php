@@ -8,9 +8,9 @@
     </button>
     <div class="collapse navbar-collapse" id="navbarNav">
       <ul class="navbar-nav ms-auto">
-        <li class="nav-item"><a class="nav-link" href="index.php"><i class="fas fa-project-diagram me-1"></i>Projects</a></li>
-        <li class="nav-item"><a class="nav-link" href="resources.php"><i class="fas fa-users me-1"></i>Resources</a></li>
-        <li class="nav-item"><a class="nav-link" href="budget.php"><i class="fas fa-dollar-sign me-1"></i>Budget</a></li>
+        <li class="nav-item"><a class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'index.php' ? 'active' : ''; ?>" href="index.php"><i class="fas fa-project-diagram me-1"></i>Projects</a></li>
+        <li class="nav-item"><a class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'resources.php' ? 'active' : ''; ?>" href="resources.php"><i class="fas fa-users me-1"></i>Resources</a></li>
+        <li class="nav-item"><a class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'budget.php' ? 'active' : ''; ?>" href="budget.php"><i class="fas fa-dollar-sign me-1"></i>Budget</a></li>
         <li class="nav-item dropdown">
           <a class="nav-link dropdown-toggle" href="#" id="notificationsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
             <i class="fas fa-bell"></i>

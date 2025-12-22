@@ -6,6 +6,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <!-- Bootstrap CDN -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    
     <link rel="stylesheet" href="css/resources.css" />
     <link rel="stylesheet" href="css/navbar.css" />
 </head>
@@ -17,7 +21,7 @@
     <!-- Budget Management Interface -->
     <div class="card secondary-card p-4">
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1>Budget Management</h1>
+            <h1><i class="fas fa-dollar-sign me-2"></i>Budget Management</h1>
             <div>
                 <button class="btn accent-btn text-dark me-2" onclick="showCreateBudgetModal()">
                     <i class="fas fa-plus me-1"></i> Create Budget
@@ -74,7 +78,7 @@
     <div class="modal-dialog">
         <div class="modal-content bg-dark border-secondary">
             <div class="modal-header border-secondary">
-                <h5 class="modal-title">Create Budget</h5>
+                <h5 class="modal-title"><i class="fas fa-plus-circle me-2"></i>Create Budget</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
@@ -116,7 +120,7 @@
     <div class="modal-dialog">
         <div class="modal-content bg-dark border-secondary">
             <div class="modal-header border-secondary">
-                <h5 class="modal-title">Allocate Budget to Task</h5>
+                <h5 class="modal-title"><i class="fas fa-hand-holding-usd me-2"></i>Allocate Budget to Task</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">

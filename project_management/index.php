@@ -10,6 +10,10 @@
     
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    
+    <!-- Flatpickr -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
     <!-- Your UI theme -->
     <link rel="stylesheet" href="css/resources.css" />
@@ -29,7 +33,7 @@
 
         <!-- HEADER -->
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1>Project Management - iServe</h1>
+            <h1><i class="fas fa-project-diagram me-2"></i>Project Management - iServe</h1>
             <div class="d-flex gap-2">
                 <button class="btn btn-primary" onclick="showAddProjectModal()">
                     <i class="fas fa-plus me-1"></i> Create Project
@@ -129,6 +133,10 @@
                         class='btn btn-outline-primary btn-sm'>";
                 echo "                    <i class='fas fa-edit'></i>";
                 echo "                </button>";
+                echo "                <button onclick='showDeleteProjectModal(" . $row['project_id'] . ", \"" . htmlspecialchars($row['name'], ENT_QUOTES) . "\")' 
+                        class='btn btn-outline-dark btn-sm'>";
+                echo "                    <i class='fas fa-trash'></i>";
+                echo "                </button>";
                 echo "            </div>";
                 
                 echo "        </div>";
@@ -142,10 +150,11 @@
     <!-- ANALYTICS VIEW (HIDDEN INITIALLY) -->
     <div id="projects-analytics" class="card secondary-card p-4 d-none">
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1>Project Management - iServe</h1>
+            <h1><i class="fas fa-project-diagram me-2"></i>Project Management - iServe</h1>
             <div class="d-flex gap-2">
-                <button class="btn btn-outline-dark" onclick="refreshProjectAnalytics()">
-                    <i class="fas fa-sync-alt me-1"></i> Refresh
+                <button class="btn btn-outline-dark" onclick="refreshProjectAnalytics()" id="refreshAnalyticsBtn">
+                    <span id="refreshAnalyticsText"><i class="fas fa-sync-alt me-1"></i> Refresh</span>
+                    <span id="refreshAnalyticsSpinner" class="spinner-border spinner-border-sm d-none ms-2" role="status"></span>
                 </button>
                 <div class="btn-group" role="group">
                     <button type="button" class="btn btn-outline-dark" id="projectListViewBtn2" onclick="setProjectView('list')">
@@ -158,40 +167,52 @@
             </div>
         </div>
 
+        <div id="analytics-error" class="alert alert-danger d-none" role="alert"></div>
+
         <div class="row mb-4">
             <div class="col-md-3 mb-3">
-                <div class="card bg-primary p-3 text-center" style="color: #60c3e6;">
-                    <h3 id="total-projects">0</h3>
-                    <p>Total Projects</p>
+                <div class="card p-3 text-center" style="background-color: #88d0e6; color: #ffffff; border: 1px solid #0d4a5f;">
+                    <h3 id="total-projects" style="font-weight: bold; margin-bottom: 0.5rem;">0</h3>
+                    <p style="margin-bottom: 0; font-weight: 500;">Total Projects</p>
                 </div>
             </div>
 
             <div class="col-md-3 mb-3">
-                <div class="card bg-primary p-3 text-center" style="color: #60c3e6;">
-                    <h3 id="projects-active">0</h3>
-                    <p>Active Projects</p>
+                <div class="card p-3 text-center" style="background-color: #88d0e6; color: #ffffff; border: 1px solid #0d4a5f;">
+                    <h3 id="projects-active" style="font-weight: bold; margin-bottom: 0.5rem;">0</h3>
+                    <p style="margin-bottom: 0; font-weight: 500;">Active Projects</p>
                 </div>
             </div>
 
             <div class="col-md-3 mb-3">
-                <div class="card bg-dark p-3 text-center" style="color: #ffffff;">
-                    <h3 id="projects-upcoming">0</h3>
-                    <p>Upcoming Projects</p>
+                <div class="card p-3 text-center" style="background-color: #88d0e6; color: #ffffff; border: 1px solid #0d4a5f;">
+                    <h3 id="projects-upcoming" style="font-weight: bold; margin-bottom: 0.5rem;">0</h3>
+                    <p style="margin-bottom: 0; font-weight: 500;">Upcoming Projects</p>
                 </div>
             </div>
 
             <div class="col-md-3 mb-3">
-                <div class="card bg-dark p-3 text-center" style="color: #ffffff;">
-                    <h3 id="projects-overdue">0</h3>
-                    <p>Overdue Projects</p>
+                <div class="card p-3 text-center" style="background-color: #88d0e6; color: #ffffff; border: 1px solid #0d4a5f;">
+                    <h3 id="projects-overdue" style="font-weight: bold; margin-bottom: 0.5rem;">0</h3>
+                    <p style="margin-bottom: 0; font-weight: 500;">Overdue Projects</p>
                 </div>
             </div>
         </div>
 
         <!-- CHART AREA -->
-        <div class="card bg-dark p-3">
-            <h5 class="text-dark">Project Timeline Overview</h5>
-            <canvas id="projectsTimelineChart"></canvas>
+        <div class="card secondary-card p-3 mb-4">
+            <h5 class="mb-3" style="color: #000000; font-weight: 600;">Project Timeline Overview</h5>
+            <div style="position: relative; height: 400px;">
+                <canvas id="projectsTimelineChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Budget Overview -->
+        <div class="card secondary-card p-3">
+            <h5 class="mb-3" style="color: #000000; font-weight: 600;">Budget Overview</h5>
+            <div style="position: relative; height: 300px;">
+                <canvas id="projectsBudgetChart"></canvas>
+            </div>
         </div>
     </div>
 
@@ -202,7 +223,7 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Create New Project</h5>
+                <h5 class="modal-title"><i class="fas fa-plus-circle me-2"></i>Create New Project</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
@@ -229,6 +250,19 @@
                         <label class="form-label">Budget</label>
                         <input type="number" class="form-control" id="project-budget" name="budget" step="0.01" min="0">
                     </div>
+                    
+                    <!-- Initial Tasks Section -->
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <label class="form-label mb-0">Initial Tasks (Optional)</label>
+                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="addInitialTask()">
+                                <i class="fas fa-plus me-1"></i> Add Task
+                            </button>
+                        </div>
+                        <div id="initial-tasks-container">
+                            <!-- Tasks will be added here dynamically -->
+                        </div>
+                    </div>
                 </form>
             </div>
             <div class="modal-footer">
@@ -248,7 +282,7 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Edit Project</h5>
+                <h5 class="modal-title"><i class="fas fa-edit me-2"></i>Edit Project</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
@@ -290,12 +324,40 @@
     </div>
 </div>
 
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0 pb-0">
+                <div class="w-100 text-center">
+                    <div class="mb-3">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 4rem; color: #1a6985;"></i>
+                    </div>
+                    <h5 class="modal-title" id="deleteConfirmTitle">Confirm Deletion</h5>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <p class="mb-0" id="deleteConfirmMessage">Are you sure you want to delete this item? This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer border-0 justify-content-center gap-3">
+                <button type="button" class="btn btn-outline-dark" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i> Cancel
+                </button>
+                <button type="button" class="btn" id="deleteConfirmBtn" style="background-color: #1a6985; color: #ffffff;" onclick="confirmDelete()">
+                    <i class="fas fa-trash me-1"></i> Delete
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Project Details Modal -->
 <div class="modal fade" id="projectDetailsModal" tabindex="-1">
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Project Details</h5>
+                <h5 class="modal-title"><i class="fas fa-info-circle me-2"></i>Project Details</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
@@ -320,6 +382,9 @@
 </div>
 
 <?php include 'includes/footer.php'; ?>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="js/main.js"></script>
@@ -368,9 +433,114 @@ function showAddProjectModal() {
     document.getElementById('project-start-date').value = '';
     document.getElementById('project-end-date').value = '';
     document.getElementById('project-budget').value = '';
+    document.getElementById('initial-tasks-container').innerHTML = '';
+    taskCounter = 0;
     
     const modal = new bootstrap.Modal(document.getElementById('addProjectModal'));
     modal.show();
+}
+
+// Add initial task row
+let taskCounter = 0;
+function addInitialTask() {
+    taskCounter++;
+    const container = document.getElementById('initial-tasks-container');
+    const taskDiv = document.createElement('div');
+    taskDiv.className = 'card mb-2 p-3 initial-task-item';
+    taskDiv.id = `task-item-${taskCounter}`;
+    taskDiv.innerHTML = `
+        <div class="d-flex justify-content-between align-items-start mb-2">
+            <strong>Task ${taskCounter}</strong>
+            <button type="button" class="btn btn-sm btn-outline-dark" onclick="removeInitialTask(${taskCounter})">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="row">
+            <div class="col-md-12 mb-2">
+                <input type="text" class="form-control form-control-sm" placeholder="Task Name *" 
+                       id="task-name-${taskCounter}" required oninput="updateTaskDependencies()">
+            </div>
+            <div class="col-md-12 mb-2">
+                <textarea class="form-control form-control-sm" rows="2" placeholder="Description" 
+                          id="task-desc-${taskCounter}"></textarea>
+            </div>
+            <div class="col-md-6 mb-2">
+                <input type="date" class="form-control form-control-sm" placeholder="Start Date" 
+                       id="task-start-${taskCounter}">
+            </div>
+            <div class="col-md-6 mb-2">
+                <input type="date" class="form-control form-control-sm" placeholder="End Date" 
+                       id="task-end-${taskCounter}">
+            </div>
+            <div class="col-md-12 mb-2">
+                <select class="form-select form-select-sm" id="task-parent-${taskCounter}" onchange="updateTaskDependencies()">
+                    <option value="">No dependency (Main Task)</option>
+                </select>
+            </div>
+        </div>
+    `;
+    container.appendChild(taskDiv);
+    
+    // Initialize date pickers for initial task dates
+    const today = new Date().toISOString().split('T')[0];
+    const projectStartDate = document.getElementById('project-start-date').value || today;
+    const projectEndDate = document.getElementById('project-end-date').value;
+    
+    // Task start date - min is today or project start date (whichever is later)
+    const taskStartMin = projectStartDate > today ? projectStartDate : today;
+    flatpickr(`#task-start-${taskCounter}`, {
+        minDate: taskStartMin,
+        maxDate: projectEndDate || null,
+        dateFormat: 'Y-m-d',
+        onChange: function(selectedDates, dateStr, instance) {
+            // Update end date min when start date changes
+            if (dateStr) {
+                const taskEndPicker = flatpickr(`#task-end-${taskCounter}`);
+                if (taskEndPicker) {
+                    taskEndPicker.set('minDate', dateStr);
+                }
+            }
+        }
+    });
+    
+    // Task end date - min is today or task start date, max is project end date
+    flatpickr(`#task-end-${taskCounter}`, {
+        minDate: taskStartMin,
+        maxDate: projectEndDate || null,
+        dateFormat: 'Y-m-d'
+    });
+    
+    updateTaskDependencies();
+}
+
+// Remove initial task
+function removeInitialTask(taskId) {
+    const taskItem = document.getElementById(`task-item-${taskId}`);
+    if (taskItem) {
+        taskItem.remove();
+        updateTaskDependencies();
+    }
+}
+
+// Update task dependency dropdowns
+function updateTaskDependencies() {
+    const taskItems = document.querySelectorAll('.initial-task-item');
+    taskItems.forEach((item, index) => {
+        const taskId = item.id.replace('task-item-', '');
+        const select = document.getElementById(`task-parent-${taskId}`);
+        if (select) {
+            const currentValue = select.value;
+            select.innerHTML = '<option value="">No dependency (Main Task)</option>';
+            taskItems.forEach((otherItem, otherIndex) => {
+                if (otherIndex < index) {
+                    const otherTaskId = otherItem.id.replace('task-item-', '');
+                    const otherTaskName = document.getElementById(`task-name-${otherTaskId}`).value || `Task ${otherTaskId}`;
+                    select.innerHTML += `<option value="${otherTaskId}">${otherTaskName}</option>`;
+                }
+            });
+            select.value = currentValue;
+        }
+    });
 }
 
 // Save new project
@@ -381,13 +551,32 @@ async function saveProject() {
         return;
     }
     
+    // Collect initial tasks
+    const tasks = [];
+    const taskItems = document.querySelectorAll('.initial-task-item');
+    taskItems.forEach((item) => {
+        const taskId = item.id.replace('task-item-', '');
+        const name = document.getElementById(`task-name-${taskId}`).value.trim();
+        if (name) {
+            const parentTaskId = document.getElementById(`task-parent-${taskId}`).value;
+            tasks.push({
+                name: name,
+                description: document.getElementById(`task-desc-${taskId}`).value.trim() || null,
+                start_date: document.getElementById(`task-start-${taskId}`).value || null,
+                end_date: document.getElementById(`task-end-${taskId}`).value || null,
+                dependency_task_index: parentTaskId ? parseInt(parentTaskId) : null
+            });
+        }
+    });
+    
     const projectData = {
         name: document.getElementById('project-name').value,
         description: document.getElementById('project-description').value,
         start_date: document.getElementById('project-start-date').value || null,
         end_date: document.getElementById('project-end-date').value || null,
         budget: document.getElementById('project-budget').value ? 
-            parseFloat(document.getElementById('project-budget').value) : null
+            parseFloat(document.getElementById('project-budget').value) : null,
+        tasks: tasks.length > 0 ? tasks : null
     };
     
     try {
@@ -410,6 +599,42 @@ async function saveProject() {
         
     } catch (error) {
         alert('Failed to create project: ' + error.message);
+    }
+}
+
+// Show delete project confirmation modal
+let pendingDeleteAction = null;
+function showDeleteProjectModal(projectId, projectName) {
+    document.getElementById('deleteConfirmTitle').textContent = 'Delete Project';
+    document.getElementById('deleteConfirmMessage').textContent = `Are you sure you want to delete "${projectName}"? This action cannot be undone.`;
+    document.getElementById('deleteConfirmBtn').onclick = () => confirmDeleteProject(projectId);
+    
+    const modal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
+    modal.show();
+}
+
+// Confirm delete project
+async function confirmDeleteProject(projectId) {
+    try {
+        const response = await fetch('api/project.php', {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ project_id: projectId })
+        });
+        
+        const data = await response.json();
+        
+        if (data.error) {
+            throw new Error(data.error);
+        }
+        
+        bootstrap.Modal.getInstance(document.getElementById('deleteConfirmModal')).hide();
+        location.reload();
+        
+    } catch (error) {
+        alert('Failed to delete project: ' + error.message);
     }
 }
 
@@ -557,7 +782,7 @@ async function showProjectDetailsModal(projectId) {
         
         contentDiv.innerHTML = `
             <div class="mb-4">
-                <h3>${escapeHtml(project.name)}</h3>
+                <h3><i class="fas fa-project-diagram me-2"></i>${escapeHtml(project.name)}</h3>
                 <p class="text-muted">${escapeHtml(project.description || 'No description')}</p>
             </div>
             
@@ -625,18 +850,163 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+let timelineChart = null;
+let budgetChart = null;
+
+// Wait for DOM to be ready
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, Chart.js available:', typeof Chart !== 'undefined');
+    
+    // Initialize date pickers for project dates
+    initializeProjectDatePickers();
+});
+
+// Initialize date pickers for project creation/editing
+function initializeProjectDatePickers() {
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Project start date - min is today
+    const projectStartDate = flatpickr('#project-start-date', {
+        minDate: today,
+        dateFormat: 'Y-m-d',
+        onChange: function(selectedDates, dateStr, instance) {
+            // Update end date min when start date changes
+            if (dateStr && projectEndDatePicker) {
+                projectEndDatePicker.set('minDate', dateStr);
+            }
+            // Update all initial task date pickers
+            updateInitialTaskDatePickers();
+        }
+    });
+    
+    // Project end date - min is today or start date
+    const projectEndDatePicker = flatpickr('#project-end-date', {
+        minDate: today,
+        dateFormat: 'Y-m-d',
+        onChange: function(selectedDates, dateStr, instance) {
+            // Update all initial task date pickers
+            updateInitialTaskDatePickers();
+        }
+    });
+    
+    // Edit project start date
+    const editProjectStartDate = flatpickr('#edit-project-start-date', {
+        minDate: today,
+        dateFormat: 'Y-m-d',
+        onChange: function(selectedDates, dateStr, instance) {
+            if (dateStr && editProjectEndDatePicker) {
+                editProjectEndDatePicker.set('minDate', dateStr);
+            }
+        }
+    });
+    
+    // Edit project end date
+    const editProjectEndDatePicker = flatpickr('#edit-project-end-date', {
+        minDate: today,
+        dateFormat: 'Y-m-d'
+    });
+    
+    // Store pickers globally for access
+    window.projectStartDatePicker = projectStartDate;
+    window.projectEndDatePicker = projectEndDatePicker;
+    window.editProjectStartDatePicker = editProjectStartDate;
+    window.editProjectEndDatePicker = editProjectEndDatePicker;
+}
+
+// Update initial task date pickers when project dates change
+function updateInitialTaskDatePickers() {
+    const today = new Date().toISOString().split('T')[0];
+    const projectStartDate = document.getElementById('project-start-date').value || today;
+    const projectEndDate = document.getElementById('project-end-date').value;
+    
+    const taskItems = document.querySelectorAll('.initial-task-item');
+    taskItems.forEach((item) => {
+        const taskId = item.id.replace('task-item-', '');
+        const taskStartInput = document.getElementById(`task-start-${taskId}`);
+        const taskEndInput = document.getElementById(`task-end-${taskId}`);
+        
+        if (taskStartInput && taskEndInput) {
+            const taskStartPicker = flatpickr(`#task-start-${taskId}`);
+            const taskEndPicker = flatpickr(`#task-end-${taskId}`);
+            
+            const taskStartMin = projectStartDate > today ? projectStartDate : today;
+            
+            if (taskStartPicker) {
+                taskStartPicker.set('minDate', taskStartMin);
+                taskStartPicker.set('maxDate', projectEndDate || null);
+            }
+            
+            if (taskEndPicker) {
+                taskEndPicker.set('minDate', taskStartMin);
+                taskEndPicker.set('maxDate', projectEndDate || null);
+            }
+        }
+    });
+}
+
 // Refresh project analytics
 async function refreshProjectAnalytics() {
+    console.log('Loading analytics...');
+    
+    // Show loading state
+    const refreshBtn = document.getElementById('refreshAnalyticsBtn');
+    const refreshText = document.getElementById('refreshAnalyticsText');
+    const refreshSpinner = document.getElementById('refreshAnalyticsSpinner');
+    const errorDiv = document.getElementById('analytics-error');
+    
+    if (refreshBtn) {
+        refreshBtn.disabled = true;
+    }
+    if (refreshText) {
+        refreshText.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Loading...';
+    }
+    if (refreshSpinner) {
+        refreshSpinner.classList.remove('d-none');
+    }
+    if (errorDiv) {
+        errorDiv.classList.add('d-none');
+        errorDiv.textContent = '';
+    }
+    
     try {
-        const response = await fetch('api/projects.php');
-        const data = await response.json();
+        const response = await fetch('api/projects.php?analytics=true');
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
         
+        const data = await response.json();
+        console.log('API Response:', data);
+        
+        // Check for API errors
         if (data.error) {
             throw new Error(data.error);
         }
         
-        const projects = data.projects || [];
+        // Handle both response formats
+        let projects = [];
+        if (Array.isArray(data)) {
+            projects = data;
+        } else if (data.projects && Array.isArray(data.projects)) {
+            projects = data.projects;
+        } else {
+            console.error('Unexpected data format:', data);
+            throw new Error('Invalid data format received from API');
+        }
+        
+        console.log('Projects loaded:', projects.length);
+        
+        if (projects.length === 0) {
+            console.warn('No projects found');
+            // Still update the UI to show 0
+            document.getElementById('total-projects').textContent = '0';
+            document.getElementById('projects-active').textContent = '0';
+            document.getElementById('projects-upcoming').textContent = '0';
+            document.getElementById('projects-overdue').textContent = '0';
+            return;
+        }
+        
         const today = new Date();
+        today.setHours(0, 0, 0, 0);
         
         let total = projects.length;
         let active = 0;
@@ -644,28 +1014,269 @@ async function refreshProjectAnalytics() {
         let overdue = 0;
         
         projects.forEach(project => {
-            const startDate = project.start_date ? new Date(project.start_date) : null;
-            const endDate = project.end_date ? new Date(project.end_date) : null;
+            if (!project.start_date || !project.end_date) {
+                return; // Skip projects without dates
+            }
             
-            if (startDate && endDate) {
-                if (startDate <= today && endDate >= today) {
-                    active++;
-                } else if (startDate > today) {
-                    upcoming++;
-                } else if (endDate < today && project.overall_progress < 100) {
+            const startDate = new Date(project.start_date);
+            const endDate = new Date(project.end_date);
+            
+            if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+                console.warn('Invalid date for project:', project.name);
+                return;
+            }
+            
+            startDate.setHours(0, 0, 0, 0);
+            endDate.setHours(0, 0, 0, 0);
+            
+            if (startDate <= today && endDate >= today) {
+                active++;
+            } else if (startDate > today) {
+                upcoming++;
+            } else if (endDate < today) {
+                // Check if project is completed (progress = 100) or has incomplete tasks
+                const progress = project.overall_progress || 0;
+                if (progress < 100) {
                     overdue++;
                 }
             }
         });
         
-        document.getElementById('total-projects').textContent = total;
-        document.getElementById('projects-active').textContent = active;
-        document.getElementById('projects-upcoming').textContent = upcoming;
-        document.getElementById('projects-overdue').textContent = overdue;
+        console.log('Analytics calculated:', { total, active, upcoming, overdue });
+        
+        // Update summary cards
+        const totalEl = document.getElementById('total-projects');
+        const activeEl = document.getElementById('projects-active');
+        const upcomingEl = document.getElementById('projects-upcoming');
+        const overdueEl = document.getElementById('projects-overdue');
+        
+        if (totalEl) totalEl.textContent = total;
+        if (activeEl) activeEl.textContent = active;
+        if (upcomingEl) upcomingEl.textContent = upcoming;
+        if (overdueEl) overdueEl.textContent = overdue;
+        
+        // Create/update charts
+        createTimelineChart(projects);
+        createBudgetChart(projects);
+        
+        console.log('Analytics loaded successfully');
         
     } catch (error) {
         console.error('Error loading analytics:', error);
+        
+        // Show error message
+        if (errorDiv) {
+            errorDiv.textContent = 'Failed to load analytics: ' + error.message;
+            errorDiv.classList.remove('d-none');
+        } else {
+            alert('Failed to load analytics: ' + error.message);
+        }
+    } finally {
+        // Reset loading state
+        if (refreshBtn) {
+            refreshBtn.disabled = false;
+        }
+        if (refreshText) {
+            refreshText.innerHTML = '<i class="fas fa-sync-alt me-1"></i> Refresh';
+        }
+        if (refreshSpinner) {
+            refreshSpinner.classList.add('d-none');
+        }
     }
+}
+
+// Create timeline chart
+function createTimelineChart(projects) {
+    const canvas = document.getElementById('projectsTimelineChart');
+    if (!canvas) {
+        console.error('Timeline chart canvas not found');
+        return;
+    }
+    
+    // Check if Chart.js is available
+    if (typeof Chart === 'undefined') {
+        console.error('Chart.js is not loaded');
+        return;
+    }
+    
+    // Destroy existing chart if it exists
+    if (timelineChart) {
+        timelineChart.destroy();
+        timelineChart = null;
+    }
+    
+    // Filter projects with valid dates
+    const validProjects = projects.filter(p => p.start_date && p.end_date);
+    
+    if (validProjects.length === 0) {
+        console.warn('No projects with valid dates for timeline chart');
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        return;
+    }
+    
+    // Prepare data for timeline
+    const labels = validProjects.map(p => p.name || 'Unnamed Project');
+    
+    // Calculate durations in days
+    const durations = validProjects.map(p => {
+        const startDate = new Date(p.start_date);
+        const endDate = new Date(p.end_date);
+        if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+            return 0;
+        }
+        const diffTime = Math.abs(endDate - startDate);
+        return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    });
+    
+    console.log('Creating timeline chart with', validProjects.length, 'projects');
+    
+    timelineChart = new Chart(canvas, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Project Duration (days)',
+                data: durations,
+                backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    labels: {
+                        color: '#000000',
+                        font: {
+                            size: 12,
+                            weight: '500'
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        color: '#000000',
+                        font: {
+                            size: 11
+                        }
+                    },
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.1)'
+                    }
+                },
+                x: {
+                    ticks: {
+                        color: '#000000',
+                        maxRotation: 45,
+                        minRotation: 45,
+                        font: {
+                            size: 11
+                        }
+                    },
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.1)'
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Create budget chart
+function createBudgetChart(projects) {
+    const canvas = document.getElementById('projectsBudgetChart');
+    if (!canvas) {
+        console.error('Budget chart canvas not found');
+        return;
+    }
+    
+    // Check if Chart.js is available
+    if (typeof Chart === 'undefined') {
+        console.error('Chart.js is not loaded');
+        return;
+    }
+    
+    // Destroy existing chart if it exists
+    if (budgetChart) {
+        budgetChart.destroy();
+        budgetChart = null;
+    }
+    
+    // Filter projects with valid budgets
+    const validProjects = projects.filter(p => p.budget && parseFloat(p.budget) > 0);
+    
+    if (validProjects.length === 0) {
+        console.warn('No projects with valid budgets for budget chart');
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        return;
+    }
+    
+    const labels = validProjects.map(p => p.name || 'Unnamed Project');
+    const budgets = validProjects.map(p => parseFloat(p.budget) || 0);
+    
+    console.log('Creating budget chart with', validProjects.length, 'projects');
+    
+    budgetChart = new Chart(canvas, {
+        type: 'doughnut',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Budget (₱)',
+                data: budgets,
+                backgroundColor: [
+                    'rgba(54, 162, 235, 0.6)',
+                    'rgba(75, 192, 192, 0.6)',
+                    'rgba(255, 206, 86, 0.6)',
+                    'rgba(255, 99, 132, 0.6)',
+                    'rgba(153, 102, 255, 0.6)',
+                    'rgba(255, 159, 64, 0.6)'
+                ],
+                borderColor: [
+                    'rgba(54, 162, 235, 1)',
+                    'rgba(75, 192, 192, 1)',
+                    'rgba(255, 206, 86, 1)',
+                    'rgba(255, 99, 132, 1)',
+                    'rgba(153, 102, 255, 1)',
+                    'rgba(255, 159, 64, 1)'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'right',
+                    labels: {
+                        color: '#000000',
+                        padding: 15,
+                        font: {
+                            size: 12,
+                            weight: '500'
+                        }
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.label + ': ₱' + context.parsed.toLocaleString('en-US', {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2
+                            });
+                        }
+                    }
+                }
+            }
+        }
+    });
 }
 </script>
 

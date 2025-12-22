@@ -72,6 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $start_date = $data['start_date'] ?? null;
     $end_date = $data['end_date'] ?? null;
     $budget = $data['budget'] ?? null;
+    $tasks = $data['tasks'] ?? [];
     
     if (!$name) {
         http_response_code(400);
@@ -80,17 +81,64 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     
     try {
+        // Start transaction
+        $conn->begin_transaction();
+        
+        // Insert project
         $stmt = $conn->prepare("INSERT INTO projects (name, description, start_date, end_date, budget) VALUES (?, ?, ?, ?, ?)");
         $stmt->bind_param("ssssd", $name, $description, $start_date, $end_date, $budget);
         
-        if ($stmt->execute()) {
-            echo json_encode(['success' => true, 'project_id' => $conn->insert_id, 'message' => 'Project created successfully']);
-        } else {
-            http_response_code(500);
-            echo json_encode(['error' => 'Failed to create project']);
+        if (!$stmt->execute()) {
+            throw new Exception('Failed to create project');
         }
         
+        $project_id = $conn->insert_id;
+        
+        // Insert tasks if provided
+        if (!empty($tasks) && is_array($tasks)) {
+            $task_ids = [];
+            $main_tasks = [];
+            $sub_tasks = [];
+            
+            // Separate main tasks and sub-tasks
+            foreach ($tasks as $index => $task) {
+                if (empty($task['dependency_task_index'])) {
+                    $main_tasks[$index] = $task;
+                } else {
+                    $sub_tasks[$index] = $task;
+                }
+            }
+            
+            // Insert main tasks first
+            foreach ($main_tasks as $index => $task) {
+                $task_stmt = $conn->prepare("INSERT INTO tasks (project_id, name, description, start_date, end_date, progress_percent) VALUES (?, ?, ?, ?, ?, 0)");
+                $task_stmt->bind_param("issss", $project_id, $task['name'], $task['description'], $task['start_date'], $task['end_date']);
+                if ($task_stmt->execute()) {
+                    $task_ids[$index] = $conn->insert_id;
+                }
+                $task_stmt->close();
+            }
+            
+            // Insert sub-tasks with dependencies
+            foreach ($sub_tasks as $index => $task) {
+                $parent_index = $task['dependency_task_index'];
+                $dependency_task_id = isset($task_ids[$parent_index]) ? $task_ids[$parent_index] : null;
+                
+                $task_stmt = $conn->prepare("INSERT INTO tasks (project_id, name, description, start_date, end_date, dependency_task_id, progress_percent) VALUES (?, ?, ?, ?, ?, ?, 0)");
+                $task_stmt->bind_param("issssi", $project_id, $task['name'], $task['description'], $task['start_date'], $task['end_date'], $dependency_task_id);
+                if ($task_stmt->execute()) {
+                    $task_ids[$index] = $conn->insert_id;
+                }
+                $task_stmt->close();
+            }
+        }
+        
+        // Commit transaction
+        $conn->commit();
+        echo json_encode(['success' => true, 'project_id' => $project_id, 'message' => 'Project created successfully']);
+        
     } catch (Exception $e) {
+        $conn->rollback();
         http_response_code(500);
         echo json_encode(['error' => 'Database error: ' . $e->getMessage()]);
     }

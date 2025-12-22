@@ -57,8 +57,8 @@ body.bg-primary-bg {
 }
 
 .btn.accent-btn:hover {
-    background-color: #7bd4f5;
-    color: #000000;
+    background-color: #1a6985;
+    color: #ffffff;
 }
 
 /* Navbar brand image styling if needed */
@@ -79,7 +79,7 @@ body.bg-primary-bg {
 }
 
 .badge.bg-secondary {
-    background-color: #000000 !important;
+    background-color: #60c3e6 !important;
     color: #ffffff !important;
 }
 
@@ -139,11 +139,11 @@ body.bg-primary-bg {
 .modal-header.border-secondary {
     border-color: var(--border-color) !important;
     background-color: var(--accent-color);
-    color: #60c3e6 !important;
+    color: #ffffff !important;
 }
 
 .modal-header .modal-title {
-    color: #60c3e6 !important;
+    color: #ffffff !important;
 }
 
 .modal-footer.border-secondary {
@@ -192,11 +192,25 @@ select.form-control.bg-dark option {
 .btn-outline-danger {
     color: #000000;
     border-color: #000000;
+    background-color: transparent;
+}
+
+.btn-outline-danger:hover {
+    background-color: #1a6985 !important;
+    color: #ffffff !important;
+    border-color: #1a6985 !important;
+}
+
+.btn-danger {
+    background-color: #60c3e6;
+    border-color: #60c3e6;
+    color: #000000;
 }
 
 .btn-danger:hover {
-    background-color: #000000 !important;
+    background-color: #1a6985 !important;
     color: #ffffff !important;
+    border-color: #1a6985 !important;
 }
 
 /* Loading spinner */
@@ -315,9 +329,9 @@ select.form-control.bg-dark option {
 }
 
 .btn-primary:hover, .btn-primary:focus, .btn-primary:active {
-    background-color: #7bd4f5 !important;
-    border-color: #7bd4f5 !important;
-    color: #000000 !important;
+    background-color: #1a6985 !important;
+    border-color: #1a6985 !important;
+    color: #ffffff !important;
 }
 
 .bg-primary {
@@ -343,8 +357,12 @@ select.form-control.bg-dark option {
     color: #ffffff !important;
 }
 
-a.text-primary, a.text-primary:hover, a.text-primary:focus {
+a.text-primary {
     color: #1a6985 !important;
+}
+
+a.text-primary:hover, a.text-primary:focus {
+    color: #000000 !important; /* Black on hover */
 }
 
 /* Override text-muted to be black instead of grey */
