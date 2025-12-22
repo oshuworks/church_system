@@ -1,0 +1,285 @@
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #fefefe;
+    color: #333;
+}
+
+a.nav-link:hover {
+    color: #ffc107 !important;
+}
+
+.btn-primary {
+    background-color: #007bff;
+    border-color: #007bff;
+}
+
+.btn-primary:hover {
+    background-color: #0056b3;
+    border-color: #004085;
+}
+
+.alert {
+    transition: opacity 0.5s ease-in-out;
+}
+
+/* Gantt Chart Styling */
+#gantt-container {
+    background-color: #ffffff;
+    border-radius: 8px;
+    padding: 20px;
+    margin-top: 20px;
+    overflow-x: auto;
+    overflow-y: visible;
+}
+
+#gantt-chart {
+    width: 100%;
+    min-height: 400px;
+}
+
+/* Gantt task status classes - using blue, black, white only */
+.gantt .bar-wrapper .bar.completed {
+    fill: #007bff;
+}
+
+.gantt .bar-wrapper .bar.in-progress {
+    fill: #000000;
+}
+
+.gantt .bar-wrapper .bar.not-started {
+    fill: #6c757d;
+}
+
+.gantt .bar-wrapper .bar-progress {
+    fill: rgba(0, 0, 0, 0.2);
+}
+
+/* Timeline View Styling */
+.timeline {
+    position: relative;
+    padding: 20px 0;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 30px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #dee2e6;
+}
+
+.timeline-item {
+    position: relative;
+    padding-left: 60px;
+    margin-bottom: 30px;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: 20px;
+    top: 5px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #6c757d;
+    border: 3px solid #ffffff;
+    box-shadow: 0 0 0 3px #dee2e6;
+    z-index: 1;
+}
+
+.timeline-item.completed .timeline-marker {
+    background: #007bff;
+    box-shadow: 0 0 0 3px #007bff;
+}
+
+.timeline-item.in-progress .timeline-marker {
+    background: #000000;
+    box-shadow: 0 0 0 3px #000000;
+}
+
+.timeline-item.not-started .timeline-marker {
+    background: #6c757d;
+    box-shadow: 0 0 0 3px #6c757d;
+}
+
+.timeline-item.overdue .timeline-marker {
+    background: #000000;
+    box-shadow: 0 0 0 3px #000000;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+.timeline-content {
+    background: #ffffff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border-left: 4px solid #dee2e6;
+}
+
+.timeline-item.completed .timeline-content {
+    border-left-color: #007bff;
+}
+
+.timeline-item.in-progress .timeline-content {
+    border-left-color: #000000;
+}
+
+.timeline-item.not-started .timeline-content {
+    border-left-color: #6c757d;
+}
+
+.timeline-item.overdue .timeline-content {
+    border-left-color: #000000;
+    background: #f5f5f5;
+}
+
+.timeline-content h5 {
+    margin-bottom: 10px;
+    color: #333;
+}
+
+.timeline-content .small {
+    font-size: 0.875rem;
+    color: #6c757d;
+}
+
+/* WBS Table Styling */
+.table-responsive {
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.table-hover tbody tr:hover {
+    background-color: #f8f9fa;
+    cursor: pointer;
+}
+
+.table-hover tbody tr:hover td {
+    background-color: #f8f9fa;
+}
+
+/* Project Progress Bar */
+.progress-bar-striped {
+    background-image: linear-gradient(45deg, rgba(255, 255, 255, 0.15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0.15) 75%, transparent 75%, transparent);
+    background-size: 1rem 1rem;
+}
+
+.progress-bar-animated {
+    animation: progress-bar-stripes 1s linear infinite;
+}
+
+@keyframes progress-bar-stripes {
+    0% {
+        background-position: 1rem 0;
+    }
+    100% {
+        background-position: 0 0;
+    }
+}
+
+/* Task Dependency Badge */
+.badge.bg-info {
+    background-color: #007bff !important;
+    color: #ffffff !important;
+}
+
+/* Modal Enhancements */
+.modal-content {
+    border-radius: 8px;
+    border: none;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+.modal-header {
+    border-bottom: 1px solid #dee2e6;
+    padding: 1.25rem;
+}
+
+.modal-footer {
+    border-top: 1px solid #dee2e6;
+    padding: 1.25rem;
+}
+
+/* Form Enhancements */
+.form-label {
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    color: #333;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* Tab Navigation */
+.nav-tabs {
+    border-bottom: 2px solid #dee2e6;
+}
+
+.nav-tabs .nav-link {
+    color: #6c757d;
+    border: none;
+    border-bottom: 2px solid transparent;
+    padding: 0.75rem 1.5rem;
+    transition: all 0.3s;
+}
+
+.nav-tabs .nav-link:hover {
+    border-bottom-color: #dee2e6;
+    color: #495057;
+}
+
+.nav-tabs .nav-link.active {
+    color: #007bff;
+    border-bottom-color: #007bff;
+    font-weight: 600;
+}
+
+/* Loading States */
+.loading-spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(0, 0, 0, 0.1);
+    border-radius: 50%;
+    border-top-color: #007bff;
+    animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .timeline::before {
+        left: 15px;
+    }
+    
+    .timeline-item {
+        padding-left: 40px;
+    }
+    
+    .timeline-marker {
+        left: 5px;
+        width: 16px;
+        height: 16px;
+    }
+    
+    #gantt-container {
+        padding: 10px;
+    }
+}
