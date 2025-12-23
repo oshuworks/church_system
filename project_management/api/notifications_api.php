@@ -8,6 +8,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $user_id = $_GET['user_id'] ?? null;
     $type = $_GET['type'] ?? null; // over_utilization, under_utilization, system
     $unread_only = $_GET['unread_only'] ?? false;
+    $deadline_only = $_GET['deadline_only'] ?? false; // Filter for deadline notifications only
 
     try {
         $where_conditions = [];
@@ -18,6 +19,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             $where_conditions[] = "notification_type = ?";
             $params[] = $type;
             $types .= "s";
+        }
+
+        // Filter for deadline notifications only if requested
+        if ($deadline_only) {
+            $where_conditions[] = "notification_type IN ('project_due_date', 'project_near_deadline', 'task_due_date', 'task_near_deadline', 'subtask_due_date', 'subtask_near_deadline')";
         }
 
         if ($unread_only) {
@@ -31,7 +37,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
         $sql = "
             SELECT n.*, r.name as resource_name, r.resource_type,
-                   p.name as project_name
+                   p.name as project_name,
+                   CASE 
+                       WHEN n.notification_type LIKE '%due_date' THEN 'danger'
+                       WHEN n.notification_type LIKE '%near_deadline' THEN 'warning'
+                       WHEN n.notification_type = 'over_utilization' THEN 'danger'
+                       WHEN n.notification_type = 'under_utilization' THEN 'info'
+                       WHEN n.notification_type = 'balancing_recommendation' THEN 'primary'
+                       ELSE 'secondary'
+                   END as badge_class
             FROM resource_notifications n
             LEFT JOIN resources r ON n.resource_id = r.resource_id
             LEFT JOIN projects p ON n.project_id = p.project_id
@@ -70,7 +84,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // Validate notification type
-    $valid_types = ['over_utilization', 'under_utilization', 'balancing_recommendation', 'system_alert'];
+    $valid_types = [
+        'over_utilization', 'under_utilization', 'balancing_recommendation', 'system_alert',
+        'project_due_date', 'project_near_deadline',
+        'task_due_date', 'task_near_deadline',
+        'subtask_due_date', 'subtask_near_deadline'
+    ];
     if (!in_array($notification_type, $valid_types)) {
         http_response_code(400);
         echo json_encode(['error' => 'Invalid notification type']);

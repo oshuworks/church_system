@@ -10,11 +10,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             SELECT p.*, 
                    COUNT(DISTINCT t.task_id) as task_count,
                    COUNT(DISTINCT CASE WHEN t.progress_percent = 100 THEN t.task_id END) as completed_tasks,
-                   COUNT(DISTINCT CASE WHEN t.end_date < CURDATE() AND t.progress_percent < 100 THEN t.task_id END) as overdue_tasks
+                   COUNT(DISTINCT CASE WHEN t.end_date < CURDATE() AND t.progress_percent < 100 THEN t.task_id END) as overdue_tasks,
+                   CASE 
+                       WHEN (COUNT(DISTINCT CASE WHEN t.progress_percent = 100 THEN t.task_id END) = COUNT(DISTINCT t.task_id) AND COUNT(DISTINCT t.task_id) > 0) THEN 3
+                       WHEN (COUNT(DISTINCT CASE WHEN t.end_date < CURDATE() AND t.progress_percent < 100 THEN t.task_id END) > 0) OR (p.end_date < CURDATE() AND COUNT(DISTINCT CASE WHEN t.progress_percent = 100 THEN t.task_id END) < COUNT(DISTINCT t.task_id)) THEN 1
+                       ELSE 2
+                   END as sort_priority,
+                   CASE 
+                       WHEN (COUNT(DISTINCT CASE WHEN t.progress_percent = 100 THEN t.task_id END) = COUNT(DISTINCT t.task_id) AND COUNT(DISTINCT t.task_id) > 0) THEN 
+                           COALESCE(-TO_DAYS(p.end_date), 0)
+                       ELSE 
+                           COALESCE(TO_DAYS(p.end_date), 0)
+                   END as sort_date
             FROM projects p
             LEFT JOIN tasks t ON p.project_id = t.project_id
             GROUP BY p.project_id
-            ORDER BY p.created_at DESC
+            ORDER BY sort_priority ASC, sort_date ASC, p.created_at DESC
         ");
         $stmt->execute();
         $result = $stmt->get_result();

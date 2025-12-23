@@ -143,13 +143,13 @@ function displayBudgets(budgets) {
                 <td>${statusBadge}</td>
                 <td>
                     <button class="btn btn-sm btn-outline-primary me-2" onclick="viewBudgetDetails(${budget.budget_id})">
-                        View Details
+                        <i class="fas fa-eye me-1"></i> View Details
                     </button>
                     <button class="btn btn-sm btn-outline-warning me-2" onclick="editBudget(${budget.budget_id})">
-                        Edit
+                        <i class="fas fa-edit me-1"></i> Edit
                     </button>
                     <button class="btn btn-sm btn-outline-success" onclick="showAllocationModal(${budget.budget_id}, '${budget.description}')">
-                        Allocate
+                        <i class="fas fa-dollar-sign me-1"></i> Allocate
                     </button>
                 </td>
             </tr>
@@ -181,13 +181,13 @@ function displayBudgetAllocations(allocations) {
                 <td>${statusBadge}</td>
                 <td>
                     <button class="btn btn-sm btn-outline-primary me-2" onclick="viewBudgetDetails(${allocation.budget_id})">
-                        View Details
+                        <i class="fas fa-eye me-1"></i> View Details
                     </button>
                     <button class="btn btn-sm btn-outline-warning me-2" onclick="editBudget(${allocation.budget_id})">
-                        Edit
+                        <i class="fas fa-edit me-1"></i> Edit
                     </button>
                     <button class="btn btn-sm btn-outline-success" onclick="showAllocationModal(${allocation.budget_id}, '${allocation.description}')">
-                        Allocate
+                        <i class="fas fa-dollar-sign me-1"></i> Allocate
                     </button>
                 </td>
             </tr>
@@ -221,8 +221,8 @@ function getBudgetStatusBadge(status) {
 function showAllocationModal(budgetId, budgetDescription) {
     currentBudgetId = budgetId;
     document.getElementById('budgetSelect').value = budgetId;
-    document.getElementById('allocateBudgetModal').querySelector('.modal-title').textContent =
-        `Allocate Budget: ${budgetDescription}`;
+    document.getElementById('allocateBudgetModal').querySelector('.modal-title').innerHTML =
+        `<i class="fas fa-hand-holding-usd me-2"></i>Allocate Budget: ${budgetDescription}`;
 
     loadTasksForAllocation();
     loadResourcesForAllocation();
@@ -294,7 +294,7 @@ async function allocateBudgetToTask() {
     const spentAmount = document.getElementById('spentAmount').value || 0;
 
     if (!budgetId || !taskId || !allocatedAmount) {
-        alert('Please fill in all required fields');
+        showError('Please fill in all required fields');
         return;
     }
 
@@ -321,11 +321,11 @@ async function allocateBudgetToTask() {
         bootstrap.Modal.getInstance(document.getElementById('allocateBudgetModal')).hide();
         loadBudgets();
 
-        alert('Budget allocated successfully');
+        showSuccess('Budget allocated successfully');
 
     } catch (error) {
         console.error('Error allocating budget:', error);
-        alert('Failed to allocate budget: ' + error.message);
+        showError('Failed to allocate budget: ' + error.message);
     }
 }
 
@@ -337,7 +337,7 @@ async function createBudget() {
     const actualCost = document.getElementById('actualCost').value || 0;
 
     if (!projectId || !description || !estimatedCost) {
-        alert('Please fill in all required fields');
+        showError('Please fill in all required fields');
         return;
     }
 
@@ -363,24 +363,24 @@ async function createBudget() {
         bootstrap.Modal.getInstance(document.getElementById('createBudgetModal')).hide();
         loadBudgets();
 
-        alert('Budget created successfully');
+        showSuccess('Budget created successfully');
 
     } catch (error) {
         console.error('Error creating budget:', error);
-        alert('Failed to create budget: ' + error.message);
+        showError('Failed to create budget: ' + error.message);
     }
 }
 
 // View budget details
 function viewBudgetDetails(budgetId) {
     // This could open a detailed view modal or navigate to a budget details page
-    alert(`Budget details view for budget ID: ${budgetId} (to be implemented)`);
+    showInfo(`Budget details view for budget ID: ${budgetId} (to be implemented)`);
 }
 
 // Edit budget
 function editBudget(budgetId) {
     // This could open an edit modal or navigate to an edit page
-    alert(`Budget edit for budget ID: ${budgetId} (to be implemented)`);
+    showInfo(`Budget edit for budget ID: ${budgetId} (to be implemented)`);
 }
 
 // Show create budget modal

@@ -30,11 +30,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         // Fetch tasks with dependency information
         $stmt = $conn->prepare("
             SELECT t.*, 
-                   dt.name as dependency_task_name
+                   dt.name as dependency_task_name,
+                   CASE 
+                       WHEN t.progress_percent = 100 THEN 3
+                       WHEN t.end_date < CURDATE() AND t.progress_percent < 100 THEN 1
+                       ELSE 2
+                   END as sort_priority,
+                   CASE 
+                       WHEN t.progress_percent = 100 THEN 
+                           COALESCE(-TO_DAYS(t.end_date), 0)
+                       ELSE 
+                           COALESCE(TO_DAYS(t.end_date), 0)
+                   END as sort_date
             FROM tasks t
             LEFT JOIN tasks dt ON t.dependency_task_id = dt.task_id
             WHERE t.project_id = ?
-            ORDER BY t.start_date, t.name
+            ORDER BY 
+                sort_priority ASC,
+                sort_date ASC,
+                t.start_date ASC,
+                t.name ASC
         ");
         $stmt->bind_param("i", $project_id);
         $stmt->execute();
@@ -72,6 +87,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $start_date = $data['start_date'] ?? null;
     $end_date = $data['end_date'] ?? null;
     $budget = $data['budget'] ?? null;
+    $tasks = $data['tasks'] ?? [];
     
     if (!$name) {
         http_response_code(400);
@@ -80,17 +96,64 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     
     try {
+        // Start transaction
+        $conn->begin_transaction();
+        
+        // Insert project
         $stmt = $conn->prepare("INSERT INTO projects (name, description, start_date, end_date, budget) VALUES (?, ?, ?, ?, ?)");
         $stmt->bind_param("ssssd", $name, $description, $start_date, $end_date, $budget);
         
-        if ($stmt->execute()) {
-            echo json_encode(['success' => true, 'project_id' => $conn->insert_id, 'message' => 'Project created successfully']);
-        } else {
-            http_response_code(500);
-            echo json_encode(['error' => 'Failed to create project']);
+        if (!$stmt->execute()) {
+            throw new Exception('Failed to create project');
         }
         
+        $project_id = $conn->insert_id;
+        
+        // Insert tasks if provided
+        if (!empty($tasks) && is_array($tasks)) {
+            $task_ids = [];
+            $main_tasks = [];
+            $sub_tasks = [];
+            
+            // Separate main tasks and sub-tasks
+            foreach ($tasks as $index => $task) {
+                if (empty($task['dependency_task_index'])) {
+                    $main_tasks[$index] = $task;
+                } else {
+                    $sub_tasks[$index] = $task;
+                }
+            }
+            
+            // Insert main tasks first
+            foreach ($main_tasks as $index => $task) {
+                $task_stmt = $conn->prepare("INSERT INTO tasks (project_id, name, description, start_date, end_date, progress_percent) VALUES (?, ?, ?, ?, ?, 0)");
+                $task_stmt->bind_param("issss", $project_id, $task['name'], $task['description'], $task['start_date'], $task['end_date']);
+                if ($task_stmt->execute()) {
+                    $task_ids[$index] = $conn->insert_id;
+                }
+                $task_stmt->close();
+            }
+            
+            // Insert sub-tasks with dependencies
+            foreach ($sub_tasks as $index => $task) {
+                $parent_index = $task['dependency_task_index'];
+                $dependency_task_id = isset($task_ids[$parent_index]) ? $task_ids[$parent_index] : null;
+                
+                $task_stmt = $conn->prepare("INSERT INTO tasks (project_id, name, description, start_date, end_date, dependency_task_id, progress_percent) VALUES (?, ?, ?, ?, ?, ?, 0)");
+                $task_stmt->bind_param("issssi", $project_id, $task['name'], $task['description'], $task['start_date'], $task['end_date'], $dependency_task_id);
+                if ($task_stmt->execute()) {
+                    $task_ids[$index] = $conn->insert_id;
+                }
+                $task_stmt->close();
+            }
+        }
+        
+        // Commit transaction
+        $conn->commit();
+        echo json_encode(['success' => true, 'project_id' => $project_id, 'message' => 'Project created successfully']);
+        
     } catch (Exception $e) {
+        $conn->rollback();
         http_response_code(500);
         echo json_encode(['error' => 'Database error: ' . $e->getMessage()]);
     }
@@ -144,29 +207,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
     }
     
     try {
-        // Check if project has tasks
-        $stmt = $conn->prepare("SELECT COUNT(*) as task_count FROM tasks WHERE project_id = ?");
+        // Start transaction for cascade deletion
+        $conn->begin_transaction();
+        
+        // Delete all subtasks first (tasks that have parent_task_id)
+        $stmt = $conn->prepare("DELETE FROM tasks WHERE project_id = ? AND parent_task_id IS NOT NULL");
         $stmt->bind_param("i", $project_id);
         $stmt->execute();
-        $result = $stmt->get_result()->fetch_assoc();
         
-        if ($result['task_count'] > 0) {
-            http_response_code(400);
-            echo json_encode(['error' => 'Cannot delete project with existing tasks. Please delete tasks first.']);
-            exit;
-        }
+        // Delete all parent tasks
+        $stmt = $conn->prepare("DELETE FROM tasks WHERE project_id = ?");
+        $stmt->bind_param("i", $project_id);
+        $stmt->execute();
         
+        // Delete the project
         $stmt = $conn->prepare("DELETE FROM projects WHERE project_id = ?");
         $stmt->bind_param("i", $project_id);
         
         if ($stmt->execute()) {
-            echo json_encode(['success' => true, 'message' => 'Project deleted successfully']);
+            $conn->commit();
+            echo json_encode(['success' => true, 'message' => 'Project and all associated tasks deleted successfully']);
         } else {
+            $conn->rollback();
             http_response_code(500);
             echo json_encode(['error' => 'Failed to delete project']);
         }
         
     } catch (Exception $e) {
+        $conn->rollback();
         http_response_code(500);
         echo json_encode(['error' => 'Database error: ' . $e->getMessage()]);
     }

@@ -12,43 +12,55 @@ body {
 }
 
 .navbar {
-    background-color: #A7C7E7 !important; /* 30% - navbar background */
+    background-color: #1a6985 !important; /* Custom blue - navbar background */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important; /* Add shadow for more contrast */
 }
 
 .navbar-brand {
-    color: #000000 !important; /* Black text */
+    color: #ffffff !important; /* White text for better contrast */
+    font-weight: 600 !important;
 }
 
 a.nav-link {
-    color: #000000 !important; /* Black text */
+    color: #ffffff !important; /* White text for better contrast */
+    font-weight: 500 !important;
 }
 
 a.nav-link:hover {
-    color: white !important; /* 10% - accent color for highlights */
+    color: #ffffff !important; /* White text on hover */
+    background-color: rgba(255, 255, 255, 0.1) !important; /* Subtle white background on hover */
+    border-radius: 4px;
+}
+
+a.nav-link.active {
+    color: #ffffff !important;
+    background-color: rgba(255, 255, 255, 0.2) !important; /* More visible background for active page */
+    border-radius: 4px;
+    font-weight: 600 !important;
 }
 
 .btn-primary {
-    background-color: #F8B195; /* 10% - primary buttons */
-    border-color: #F8B195;
-    color: #000000; /* Black text */
+    background-color: #60c3e6; /* Custom blue - primary buttons */
+    border-color: #60c3e6;
+    color: #000000; /* Black text on #60c3e6 background */
 }
 
 .btn-primary:hover {
-    background-color: white; /* Darker shade of accent color */
-    border-color: #e89a7a;
-    color: #000000; /* Black text */
+    background-color: #1a6985; /* Darker blue for hover */
+    border-color: #1a6985;
+    color: #ffffff; /* White text on #1a6985 background */
 }
 
 .btn-secondary {
-    background-color: #A7C7E7; /* 30% - secondary buttons */
-    border-color: #A7C7E7;
-    color: #000000; /* Black text */
+    background-color: #60c3e6; /* Custom blue - secondary buttons */
+    border-color: #60c3e6;
+    color: #000000; /* Black text on #60c3e6 background */
 }
 
 .btn-secondary:hover {
-    background-color: #8bb3d4; /* Darker shade of secondary color */
-    border-color: #8bb3d4;
-    color: #000000; /* Black text */
+    background-color: #1a6985; /* Darker blue for hover */
+    border-color: #1a6985;
+    color: #ffffff; /* White text on #1a6985 background */
 }
 
 .alert {

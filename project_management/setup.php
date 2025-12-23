@@ -133,7 +133,7 @@
                 // Display results
                 if (count($errors) > 0) {
                     echo '<div class="alert alert-danger">';
-                    echo '<h5>Errors:</h5><ul>';
+                    echo '<h5><i class="fas fa-exclamation-triangle me-2"></i>Errors:</h5><ul>';
                     foreach ($errors as $error) {
                         echo '<li class="error">' . htmlspecialchars($error) . '</li>';
                     }
@@ -142,7 +142,7 @@
                 
                 if (count($success) > 0) {
                     echo '<div class="alert alert-success">';
-                    echo '<h5>Setup Status:</h5><ul>';
+                    echo '<h5><i class="fas fa-info-circle me-2"></i>Setup Status:</h5><ul>';
                     foreach ($success as $msg) {
                         echo '<li class="success">' . htmlspecialchars($msg) . '</li>';
                     }
@@ -151,7 +151,7 @@
                 
                 if (count($errors) == 0) {
                     echo '<div class="alert alert-info">';
-                    echo '<h5>Setup Complete!</h5>';
+                    echo '<h5><i class="fas fa-check-circle me-2"></i>Setup Complete!</h5>';
                     echo '<p>Your database has been set up successfully. You can now use the application.</p>';
                     echo '<a href="index.php" class="btn btn-primary">Go to Application</a>';
                     echo '</div>';

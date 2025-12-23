@@ -1,0 +1,355 @@
+/* Color scheme - Blue, White, and Black only */
+:root {
+    --primary-bg: #ffffff; /* White background */
+    --secondary-bg: #f5f5f5; /* Light gray for cards */
+    --accent-color: #53aac9; /* Custom blue */
+    --success-color: #1a6985; /* Blue for success */
+    --warning-color: #000000; /* Black for warning */
+    --error-color: #000000;   /* Black for error */
+    --font-family: 'Poppins', sans-serif;
+    --text-color: #000000; /* Black text for all elements */
+}
+
+/* Background of body */
+body.bg-primary-bg {
+    background-color: #f5f5f5;
+    font-family: 'Poppins', 'Nunito Sans', sans-serif;
+    color: var(--text-color);
+}
+
+/* Cards and panels */
+.card.secondary-card {
+    background-color: #ffffff;
+    color: var(--text-color);
+    border: 1px solid #dee2e6;
+}
+
+.card.secondary-card h1,
+.card.secondary-card h2,
+.card.secondary-card h3,
+.card.secondary-card h4,
+.card.secondary-card h5,
+.card.secondary-card h6,
+.card.secondary-card p,
+.card.secondary-card .card-title {
+    color: var(--text-color) !important;
+}
+
+.card.bg-dark {
+    background-color: #ffffff !important;
+    border: 1px solid #e2e8f0;
+}
+
+.card.bg-dark h1,
+.card.bg-dark h2,
+.card.bg-dark h3,
+.card.bg-dark h4,
+.card.bg-dark h5,
+.card.bg-dark h6,
+.card.bg-dark p,
+.card.bg-dark .card-title {
+    color: var(--text-color) !important;
+}
+
+/* Accent buttons */
+.btn.accent-btn {
+    background-color: #60c3e6;
+    color: #000000;
+    border: none;
+}
+
+.btn.accent-btn:hover {
+    background-color: #7bd4f5;
+    color: #000000;
+}
+
+/* Navbar brand image styling if needed */
+.navbar-brand img {
+    border-radius: 5px;
+    object-fit: contain;
+}
+
+/* Badge styling */
+.badge {
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.badge.bg-primary {
+    background-color: var(--accent-color) !important;
+    color: #ffffff !important;
+}
+
+.badge.bg-secondary {
+    background-color: #000000 !important;
+    color: #ffffff !important;
+}
+
+/* Progress bar styling */
+.progress {
+    height: 8px;
+}
+
+.progress-bar {
+    transition: width 0.3s ease;
+}
+
+/* Table styling for light theme */
+.table-dark {
+    color: var(--text-color);
+    background-color: #ffffff;
+}
+
+.table-dark th {
+    border-color: #dee2e6;
+    background-color: var(--accent-color);
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.table-dark td {
+    border-color: #e2e8f0;
+    color: var(--text-color);
+    background-color: #ffffff;
+}
+
+/* Alternating row colors for better readability */
+.table-dark tbody tr:nth-child(even) {
+    background-color: #f8fafc;
+}
+
+.table-dark tbody tr:nth-child(even) td {
+    background-color: #f8fafc;
+    color: var(--text-color);
+}
+
+.table-dark tbody tr:nth-child(odd) {
+    background-color: #ffffff;
+}
+
+.table-dark tbody tr:nth-child(odd) td {
+    background-color: #ffffff;
+    color: var(--text-color);
+}
+
+/* Modal styling for light theme */
+.modal-content.bg-dark {
+    background-color: #ffffff !important;
+    color: var(--text-color);
+}
+
+.modal-header.border-secondary {
+    border-color: #dee2e6 !important;
+    background-color: var(--accent-color);
+    color: #60c3e6 !important;
+}
+
+.modal-header .modal-title {
+    color: #60c3e6 !important;
+}
+
+.modal-footer.border-secondary {
+    border-color: #e2e8f0 !important;
+}
+
+/* Form controls in light theme */
+.form-control.bg-dark {
+    background-color: #ffffff !important;
+    color: var(--text-color) !important;
+    border-color: #cbd5e0;
+}
+
+.form-control.bg-dark:focus {
+    background-color: #ffffff !important;
+    color: var(--text-color) !important;
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 0.2rem rgba(26, 105, 133, 0.25);
+}
+
+.form-control.bg-dark::placeholder {
+    color: #000000 !important;
+}
+
+/* Select dropdown styling */
+select.form-control.bg-dark option {
+    background-color: #ffffff;
+    color: var(--text-color);
+}
+
+/* Button styling for better contrast */
+.btn {
+    font-weight: 500;
+}
+
+.btn-outline-light {
+    color: var(--accent-color);
+    border-color: var(--accent-color);
+}
+
+.btn-outline-light:hover {
+    background-color: var(--accent-color);
+    color: #ffffff;
+}
+
+.btn-outline-danger {
+    color: #000000;
+    border-color: #000000;
+}
+
+.btn-danger:hover {
+    background-color: #000000 !important;
+    color: #ffffff !important;
+}
+
+/* Loading spinner */
+.spinner-border.text-light {
+    color: var(--accent-color) !important;
+}
+
+/* Status utility classes - using blue, black, white only */
+.text-success { color: var(--accent-color) !important; }
+.bg-success { background-color: var(--accent-color) !important; }
+.text-warning { color: #000000 !important; }
+.bg-warning { background-color: #000000 !important; }
+.text-error { color: #000000 !important; }
+.bg-error { background-color: #000000 !important; }
+
+.alert-success {
+    background-color: rgba(26, 105, 133, 0.1);
+    border-color: var(--accent-color);
+    color: #000000;
+}
+
+.alert-warning {
+    background-color: rgba(0, 0, 0, 0.05);
+    border-color: #000000;
+    color: #000000;
+}
+
+.alert-error {
+    background-color: rgba(0, 0, 0, 0.05);
+    border-color: #000000;
+    color: #000000;
+}
+
+/* Form validation feedback */
+.form-control.is-valid {
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 0.2rem rgba(26, 105, 133, 0.25);
+}
+
+.form-control.is-invalid {
+    border-color: #000000;
+    box-shadow: 0 0 0 0.2rem rgba(0, 0, 0, 0.25);
+}
+
+.valid-feedback {
+    display: block;
+    width: 100%;
+    margin-top: 0.25rem;
+    font-size: 0.875em;
+    color: #000000;
+}
+
+.invalid-feedback {
+    display: block;
+    width: 100%;
+    margin-top: 0.25rem;
+    font-size: 0.875em;
+    color: #000000;
+}
+
+/* Allocation Summary Display */
+.card.allocation-summary {
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    border: 1px solid #cbd5e0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.allocation-summary .card-body {
+    padding: 0.75rem;
+}
+
+.allocation-summary .progress {
+    height: 8px;
+    background-color: #e2e8f0;
+    border-radius: 4px;
+}
+
+.allocation-summary .progress-bar {
+    border-radius: 4px;
+    transition: all 0.3s ease;
+}
+
+.allocation-summary .allocation-text {
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.allocation-summary .allocation-value {
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+/* Chart card constraints */
+.card .card-body canvas {
+    max-height: 250px !important;
+    width: 100% !important;
+    height: auto !important;
+}
+
+/* Analytics chart cards */
+#analytics-dashboard .card {
+    overflow: hidden;
+}
+
+#utilizationChart,
+#resourceTypesChart {
+    max-height: 250px !important;
+    width: 100% !important;
+}
+
+/* Override Bootstrap primary colors with custom blue */
+.btn-primary {
+    background-color: #60c3e6 !important;
+    border-color: #60c3e6 !important;
+    color: #000000 !important;
+}
+
+.btn-primary:hover, .btn-primary:focus, .btn-primary:active {
+    background-color: #7bd4f5 !important;
+    border-color: #7bd4f5 !important;
+    color: #000000 !important;
+}
+
+.bg-primary {
+    background-color: #1a6985 !important;
+}
+
+.text-primary {
+    color: #1a6985 !important;
+}
+
+.progress-bar.bg-primary {
+    background-color: #1a6985 !important;
+}
+
+.btn-outline-primary {
+    color: #1a6985 !important;
+    border-color: #1a6985 !important;
+}
+
+.btn-outline-primary:hover, .btn-outline-primary:focus, .btn-outline-primary:active {
+    background-color: #1a6985 !important;
+    border-color: #1a6985 !important;
+    color: #ffffff !important;
+}
+
+a.text-primary, a.text-primary:hover, a.text-primary:focus {
+    color: #1a6985 !important;
+}
+
+/* Override text-muted to be black instead of grey */
+.text-muted {
+    color: #000000 !important;
+}

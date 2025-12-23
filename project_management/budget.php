@@ -6,6 +6,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <!-- Bootstrap CDN -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    
     <link rel="stylesheet" href="css/resources.css" />
     <link rel="stylesheet" href="css/navbar.css" />
 </head>
@@ -17,15 +21,21 @@
     <!-- Budget Management Interface -->
     <div class="card secondary-card p-4">
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1>Budget Management</h1>
+            <h1><i class="fas fa-dollar-sign me-2"></i>Budget Management</h1>
             <div>
-                <button class="btn accent-btn text-dark me-2" onclick="showCreateBudgetModal()">Create Budget</button>
+                <button class="btn accent-btn text-dark me-2" onclick="showCreateBudgetModal()">
+                    <i class="fas fa-plus me-1"></i> Create Budget
+                </button>
                 <div class="btn-group" role="group">
                     <input type="radio" class="btn-check" name="budgetViewMode" id="budgetListView" autocomplete="off" checked>
-                    <label class="btn btn-outline-dark" for="budgetListView" onclick="setBudgetViewMode('list')">Budget Overview</label>
+                    <label class="btn btn-outline-dark" for="budgetListView" onclick="setBudgetViewMode('list')">
+                        <i class="fas fa-list me-1"></i> Budget Overview
+                    </label>
 
                     <input type="radio" class="btn-check" name="budgetViewMode" id="budgetAllocationView" autocomplete="off">
-                    <label class="btn btn-outline-dark" for="budgetAllocationView" onclick="setBudgetViewMode('allocations')">Detailed Allocations</label>
+                    <label class="btn btn-outline-dark" for="budgetAllocationView" onclick="setBudgetViewMode('allocations')">
+                        <i class="fas fa-table me-1"></i> Detailed Allocations
+                    </label>
                 </div>
             </div>
         </div>
@@ -68,7 +78,7 @@
     <div class="modal-dialog">
         <div class="modal-content bg-dark border-secondary">
             <div class="modal-header border-secondary">
-                <h5 class="modal-title text-dark">Create Budget</h5>
+                <h5 class="modal-title"><i class="fas fa-plus-circle me-2"></i>Create Budget</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
@@ -94,8 +104,12 @@
                 </form>
             </div>
             <div class="modal-footer border-secondary">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn accent-btn text-dark" onclick="createBudget()">Create Budget</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i> Cancel
+                </button>
+                <button type="button" class="btn accent-btn text-dark" onclick="createBudget()">
+                    <i class="fas fa-check me-1"></i> Create Budget
+                </button>
             </div>
         </div>
     </div>
@@ -106,7 +120,7 @@
     <div class="modal-dialog">
         <div class="modal-content bg-dark border-secondary">
             <div class="modal-header border-secondary">
-                <h5 class="modal-title text-dark">Allocate Budget to Task</h5>
+                <h5 class="modal-title"><i class="fas fa-hand-holding-usd me-2"></i>Allocate Budget to Task</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
@@ -140,8 +154,12 @@
                 </form>
             </div>
             <div class="modal-footer border-secondary">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn accent-btn text-dark" onclick="allocateBudgetToTask()">Allocate Budget</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i> Cancel
+                </button>
+                <button type="button" class="btn accent-btn text-dark" onclick="allocateBudgetToTask()">
+                    <i class="fas fa-check me-1"></i> Allocate Budget
+                </button>
             </div>
         </div>
     </div>

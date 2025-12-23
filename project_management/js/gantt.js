@@ -184,24 +184,34 @@ async function renderGanttChart(projectId, containerId = 'gantt-chart') {
 
 /**
  * Show notification (helper function)
+ * Uses the new toast notification system
  */
 function showNotification(message, type = 'info') {
-    // Create a simple toast notification
-    const toast = document.createElement('div');
-    toast.className = `alert alert-${type === 'error' ? 'danger' : type === 'success' ? 'success' : 'info'} alert-dismissible fade show position-fixed`;
-    toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
-    toast.setAttribute('role', 'alert');
-    toast.innerHTML = `
-        ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    `;
+    // Map types to toast function
+    const typeMap = {
+        'success': 'success',
+        'error': 'error',
+        'warning': 'warning',
+        'info': 'info'
+    };
     
-    document.body.appendChild(toast);
+    const toastType = typeMap[type] || 'info';
     
-    // Auto-remove after 5 seconds
-    setTimeout(() => {
-        toast.remove();
-    }, 5000);
+    // Use the global toast functions if available, otherwise fallback
+    if (typeof showToast === 'function') {
+        showToast(message, toastType);
+    } else if (typeof showSuccess === 'function' && type === 'success') {
+        showSuccess(message);
+    } else if (typeof showError === 'function' && type === 'error') {
+        showError(message);
+    } else if (typeof showWarning === 'function' && type === 'warning') {
+        showWarning(message);
+    } else if (typeof showInfo === 'function') {
+        showInfo(message);
+    } else {
+        // Fallback to simple alert if toast system not available
+        alert(message);
+    }
 }
 
 /**

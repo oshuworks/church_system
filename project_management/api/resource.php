@@ -218,33 +218,72 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
     exit;
 }
 
-// Handle DELETE request for removing resource allocation
+// Handle DELETE request
 if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
-    // Get parameters from URL (GET parameters)
-    $resource_id = $_GET['resource_id'] ?? null;
+    $data = json_decode(file_get_contents('php://input'), true);
+    $resource_id = $data['resource_id'] ?? $_GET['resource_id'] ?? null;
     $task_id = $_GET['task_id'] ?? null;
 
-    if (!$resource_id || !$task_id) {
+    // If task_id is provided, delete allocation
+    if ($task_id) {
+        if (!$resource_id || !$task_id) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Resource ID and Task ID are required']);
+            exit;
+        }
+
+        try {
+            $stmt = $conn->prepare("DELETE FROM resource_allocations WHERE resource_id = ? AND task_id = ?");
+            $stmt->bind_param("ii", $resource_id, $task_id);
+
+            if ($stmt->execute()) {
+                if ($stmt->affected_rows > 0) {
+                    echo json_encode(['success' => true, 'message' => 'Resource allocation removed successfully']);
+                } else {
+                    http_response_code(404);
+                    echo json_encode(['error' => 'Allocation not found']);
+                }
+            } else {
+                http_response_code(500);
+                echo json_encode(['error' => 'Failed to remove resource allocation']);
+            }
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['error' => 'Database error: ' . $e->getMessage()]);
+        }
+        exit;
+    }
+    
+    // Otherwise, delete the resource itself
+    if (!$resource_id) {
         http_response_code(400);
-        echo json_encode(['error' => 'Resource ID and Task ID are required']);
+        echo json_encode(['error' => 'Resource ID is required']);
         exit;
     }
 
     try {
-        $stmt = $conn->prepare("DELETE FROM resource_allocations WHERE resource_id = ? AND task_id = ?");
-        $stmt->bind_param("ii", $resource_id, $task_id);
-
+        // Check if resource has allocations
+        $stmt = $conn->prepare("SELECT COUNT(*) as allocation_count FROM resource_allocations WHERE resource_id = ?");
+        $stmt->bind_param("i", $resource_id);
+        $stmt->execute();
+        $result = $stmt->get_result()->fetch_assoc();
+        
+        if ($result['allocation_count'] > 0) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Cannot delete resource with existing allocations. Please remove allocations first.']);
+            exit;
+        }
+        
+        $stmt = $conn->prepare("DELETE FROM resources WHERE resource_id = ?");
+        $stmt->bind_param("i", $resource_id);
+        
         if ($stmt->execute()) {
-            if ($stmt->affected_rows > 0) {
-                echo json_encode(['success' => true, 'message' => 'Resource allocation removed successfully']);
-            } else {
-                http_response_code(404);
-                echo json_encode(['error' => 'Allocation not found']);
-            }
+            echo json_encode(['success' => true, 'message' => 'Resource deleted successfully']);
         } else {
             http_response_code(500);
-            echo json_encode(['error' => 'Failed to remove resource allocation']);
+            echo json_encode(['error' => 'Failed to delete resource']);
         }
+        
     } catch (Exception $e) {
         http_response_code(500);
         echo json_encode(['error' => 'Database error: ' . $e->getMessage()]);
