@@ -19,7 +19,7 @@ function clearCharts() {
 }
 
 // Delete resource
-// Show delete resource confirmation modal
+// Show delete resource confirmation toast
 function showDeleteResourceModal() {
     if (!currentResourceId) {
         showError('No resource selected');
@@ -27,12 +27,14 @@ function showDeleteResourceModal() {
     }
     
     const resourceName = document.getElementById('resource-name').textContent || 'this resource';
-    document.getElementById('deleteConfirmTitle').textContent = 'Delete Resource';
-    document.getElementById('deleteConfirmMessage').textContent = `Are you sure you want to delete "${resourceName}"? This action cannot be undone.`;
-    document.getElementById('deleteConfirmBtn').onclick = confirmDeleteResource;
-    
-    const modal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
-    modal.show();
+    showConfirmToast(
+        `Are you sure you want to delete "${resourceName}"? This action cannot be undone.`,
+        'Delete Resource',
+        confirmDeleteResource,
+        null,
+        'Delete',
+        'Cancel'
+    );
 }
 
 // Confirm delete resource
@@ -52,7 +54,6 @@ async function confirmDeleteResource() {
             throw new Error(data.error);
         }
         
-        bootstrap.Modal.getInstance(document.getElementById('deleteConfirmModal')).hide();
         showSuccess('Resource deleted successfully');
         setTimeout(() => {
             window.location.href = 'resources.php';
@@ -586,36 +587,46 @@ async function allocateToTask() {
 
 // Remove allocation
 async function removeAllocation(taskId) {
-    if (!confirm('Are you sure you want to remove this allocation?')) {
-        return;
-    }
+    return new Promise((resolve) => {
+        showConfirmToast(
+            'Are you sure you want to remove this allocation?',
+            'Remove Allocation',
+            async () => {
+                // Validate that we have the required IDs
+                if (!currentResourceId || !taskId) {
+                    console.error('Missing required IDs:', { currentResourceId, taskId });
+                    showError('Missing required resource or task ID');
+                    resolve();
+                    return;
+                }
 
-    // Validate that we have the required IDs
-    if (!currentResourceId || !taskId) {
-        console.error('Missing required IDs:', { currentResourceId, taskId });
-        showError('Missing required resource or task ID');
-        return;
-    }
+                try {
+                    const response = await fetch(`api/resource.php?resource_id=${currentResourceId}&task_id=${taskId}`, {
+                        method: 'DELETE'
+                    });
 
-    try {
-        const response = await fetch(`api/resource.php?resource_id=${currentResourceId}&task_id=${taskId}`, {
-            method: 'DELETE'
-        });
+                    const data = await response.json();
 
-        const data = await response.json();
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
 
-        if (data.error) {
-            throw new Error(data.error);
-        }
+                    loadResourceDetails();
+                    showSuccess('Allocation removed successfully');
+                    resolve();
 
-        loadResourceDetails();
-        showSuccess('Allocation removed successfully');
+                } catch (error) {
+                    console.error('Error removing allocation:', error);
+                    showError('Failed to remove allocation: ' + error.message);
+                    resolve();
+                }
+            },
+            () => resolve(),
+            'Remove',
+            'Cancel'
+        );
+    });
 
-    } catch (error) {
-        console.error('Error removing allocation:', error);
-        showError('Failed to remove allocation: ' + error.message);
-    }
-}
 
 // Refresh allocations
 function refreshAllocations() {
@@ -928,9 +939,41 @@ function displayBalancingRecommendations(recommendations) {
 
 // Auto-balance resource
 async function autoBalanceResource(resourceId) {
-    if (!confirm('Are you sure you want to automatically balance this resource allocation? This will modify existing allocations.')) {
-        return;
-    }
+    return new Promise((resolve) => {
+        showConfirmToast(
+            'Are you sure you want to automatically balance this resource allocation? This will modify existing allocations.',
+            'Auto-Balance Resource',
+            async () => {
+                try {
+                    const response = await fetch('api/resource_balancing.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ resource_id: resourceId })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
+
+                    showSuccess(data.message || 'Resource balanced successfully');
+                    loadResourceDetails();
+                    loadBalancingRecommendations();
+                    resolve();
+                } catch (error) {
+                    console.error('Error auto-balancing resource:', error);
+                    showError('Failed to auto-balance resource: ' + error.message);
+                    resolve();
+                }
+            },
+            () => resolve(),
+            'Balance',
+            'Cancel'
+        );
+    });
 
     const formData = new FormData();
     formData.append('resource_id', resourceId);
@@ -948,12 +991,12 @@ async function autoBalanceResource(resourceId) {
             throw new Error(data.error);
         }
 
-        alert(data.message);
+        showSuccess(data.message || 'Resource balanced successfully');
         loadResourceDetails(); // Reload resource details
 
     } catch (error) {
         console.error('Error auto-balancing resource:', error);
-        alert('Failed to auto-balance resource: ' + error.message);
+        showError('Failed to auto-balance resource: ' + error.message);
     }
 }
 
@@ -1200,8 +1243,8 @@ function clearCharts() {
     }
 }
 
-// Delete resource
-// Show delete resource confirmation modal
+// Delete resource (duplicate - keeping for compatibility)
+// Show delete resource confirmation toast
 function showDeleteResourceModal() {
     if (!currentResourceId) {
         showError('No resource selected');
@@ -1209,15 +1252,17 @@ function showDeleteResourceModal() {
     }
     
     const resourceName = document.getElementById('resource-name').textContent || 'this resource';
-    document.getElementById('deleteConfirmTitle').textContent = 'Delete Resource';
-    document.getElementById('deleteConfirmMessage').textContent = `Are you sure you want to delete "${resourceName}"? This action cannot be undone.`;
-    document.getElementById('deleteConfirmBtn').onclick = confirmDeleteResource;
-    
-    const modal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
-    modal.show();
+    showConfirmToast(
+        `Are you sure you want to delete "${resourceName}"? This action cannot be undone.`,
+        'Delete Resource',
+        confirmDeleteResource,
+        null,
+        'Delete',
+        'Cancel'
+    );
 }
 
-// Confirm delete resource
+// Confirm delete resource (duplicate - keeping for compatibility)
 async function confirmDeleteResource() {
     try {
         const response = await fetch('api/resource.php', {
@@ -1234,7 +1279,6 @@ async function confirmDeleteResource() {
             throw new Error(data.error);
         }
         
-        bootstrap.Modal.getInstance(document.getElementById('deleteConfirmModal')).hide();
         showSuccess('Resource deleted successfully');
         setTimeout(() => {
             window.location.href = 'resources.php';

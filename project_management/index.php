@@ -591,24 +591,29 @@ function addInitialTask() {
     
     // Task start date - min is today or project start date (whichever is later)
     const taskStartMin = projectStartDate > today ? projectStartDate : today;
-    flatpickr(`#task-start-${taskCounter}`, {
+    const taskStartPicker = flatpickr(`#task-start-${taskCounter}`, {
         minDate: taskStartMin,
         maxDate: projectEndDate || null,
         dateFormat: 'Y-m-d',
         onChange: function(selectedDates, dateStr, instance) {
             // Update end date min when start date changes
             if (dateStr) {
-                const taskEndPicker = flatpickr(`#task-end-${taskCounter}`);
-                if (taskEndPicker) {
-                    taskEndPicker.set('minDate', dateStr);
+                const taskEndInput = document.getElementById(`task-end-${taskCounter}`);
+                if (taskEndInput && taskEndInput._flatpickr) {
+                    taskEndInput._flatpickr.set('minDate', dateStr);
+                    // Also ensure end date doesn't exceed project end date
+                    if (projectEndDate) {
+                        taskEndInput._flatpickr.set('maxDate', projectEndDate);
+                    }
                 }
             }
         }
     });
     
     // Task end date - min is today or task start date, max is project end date
-    flatpickr(`#task-end-${taskCounter}`, {
+    const taskEndPicker = flatpickr(`#task-end-${taskCounter}`, {
         minDate: taskStartMin,
+        maxDate: projectEndDate || null,
         maxDate: projectEndDate || null,
         dateFormat: 'Y-m-d'
     });
@@ -698,18 +703,25 @@ async function saveProject() {
         }
         
         bootstrap.Modal.getInstance(document.getElementById('addProjectModal')).hide();
-        location.reload(); // Reload to show new project
+        showSuccess('Project created successfully');
+        setTimeout(() => {
+            location.reload(); // Reload to show new project
+        }, 1000);
         
     } catch (error) {
-        alert('Failed to create project: ' + error.message);
+        showError('Failed to create project: ' + error.message);
     }
 }
 
 // Show delete project confirmation modal
-let pendingDeleteAction = null;
+let pendingDeleteProjectId = null;
 function showDeleteProjectModal(projectId, projectName) {
+    pendingDeleteProjectId = projectId;
     document.getElementById('deleteConfirmTitle').textContent = 'Delete Project';
-    document.getElementById('deleteConfirmMessage').textContent = `Are you sure you want to delete "${projectName}"? This action cannot be undone.`;
+    document.getElementById('deleteConfirmMessage').innerHTML = `
+        <p>Are you sure you want to delete <strong>"${projectName}"</strong>?</p>
+        <p class="text-danger mb-0"><i class="fas fa-exclamation-triangle me-1"></i>This will delete the project and all associated tasks and subtasks. This action cannot be undone.</p>
+    `;
     document.getElementById('deleteConfirmBtn').onclick = () => confirmDeleteProject(projectId);
     
     const modal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
@@ -724,8 +736,13 @@ async function confirmDeleteProject(projectId) {
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ project_id: projectId })
+            body: JSON.stringify({ project_id: parseInt(projectId) })
         });
+        
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ error: 'Failed to delete project' }));
+            throw new Error(errorData.error || 'Failed to delete project');
+        }
         
         const data = await response.json();
         
@@ -734,10 +751,14 @@ async function confirmDeleteProject(projectId) {
         }
         
         bootstrap.Modal.getInstance(document.getElementById('deleteConfirmModal')).hide();
-        location.reload();
+        showSuccess(`Project and all associated tasks deleted successfully`);
+        setTimeout(() => {
+            location.reload();
+        }, 1000);
         
     } catch (error) {
-        alert('Failed to delete project: ' + error.message);
+        console.error('Delete project error:', error);
+        showError('Failed to delete project: ' + error.message);
     }
 }
 
@@ -763,7 +784,7 @@ async function showEditProjectModal(projectId) {
         modal.show();
         
     } catch (error) {
-        alert('Failed to load project: ' + error.message);
+        showError('Failed to load project: ' + error.message);
     }
 }
 
@@ -795,10 +816,13 @@ async function updateProject() {
         }
         
         bootstrap.Modal.getInstance(document.getElementById('editProjectModal')).hide();
-        location.reload();
+        showSuccess('Project updated successfully');
+        setTimeout(() => {
+            location.reload();
+        }, 1000);
         
     } catch (error) {
-        alert('Failed to update project: ' + error.message);
+        showError('Failed to update project: ' + error.message);
     }
 }
 
@@ -1055,6 +1079,8 @@ let analyticsProjects = {
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM loaded, Chart.js available:', typeof Chart !== 'undefined');
     
+    // Notification system is initialized in main.js
+    
     // Initialize date pickers for project dates
     initializeProjectDatePickers();
     
@@ -1166,19 +1192,31 @@ function updateInitialTaskDatePickers() {
         const taskEndInput = document.getElementById(`task-end-${taskId}`);
         
         if (taskStartInput && taskEndInput) {
-            const taskStartPicker = flatpickr(`#task-start-${taskId}`);
-            const taskEndPicker = flatpickr(`#task-end-${taskId}`);
+            // Get flatpickr instances using the _flatpickr property (stored by flatpickr)
+            const taskStartPicker = taskStartInput._flatpickr;
+            const taskEndPicker = taskEndInput._flatpickr;
             
             const taskStartMin = projectStartDate > today ? projectStartDate : today;
             
             if (taskStartPicker) {
                 taskStartPicker.set('minDate', taskStartMin);
                 taskStartPicker.set('maxDate', projectEndDate || null);
+                // If current date exceeds max, reset it
+                if (projectEndDate && taskStartInput.value && taskStartInput.value > projectEndDate) {
+                    taskStartPicker.setDate(projectEndDate);
+                }
             }
             
             if (taskEndPicker) {
-                taskEndPicker.set('minDate', taskStartMin);
+                // Ensure end date min is at least task start date if set
+                const currentStartDate = taskStartInput.value;
+                const endDateMin = currentStartDate && currentStartDate > taskStartMin ? currentStartDate : taskStartMin;
+                taskEndPicker.set('minDate', endDateMin);
                 taskEndPicker.set('maxDate', projectEndDate || null);
+                // If current date exceeds max, reset it
+                if (projectEndDate && taskEndInput.value && taskEndInput.value > projectEndDate) {
+                    taskEndPicker.setDate(projectEndDate);
+                }
             }
         }
     });
@@ -1321,7 +1359,7 @@ async function refreshProjectAnalytics() {
             errorDiv.textContent = 'Failed to load analytics: ' + error.message;
             errorDiv.classList.remove('d-none');
         } else {
-            alert('Failed to load analytics: ' + error.message);
+            showError('Failed to load analytics: ' + error.message);
         }
     } finally {
         // Reset loading state

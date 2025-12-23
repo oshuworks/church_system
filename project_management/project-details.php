@@ -392,12 +392,17 @@ document.addEventListener('DOMContentLoaded', function() {
     currentProjectId = urlParams.get('project_id');
     
     if (!currentProjectId) {
-        alert('Project ID is required');
-        window.location.href = 'index.php';
+        showError('Project ID is required');
+        setTimeout(() => {
+            window.location.href = 'index.php';
+        }, 2000);
         return;
     }
     
     loadProjectDetails();
+    
+    // Initialize notification system (includes deadline checking)
+    // Notification system is initialized in main.js
     
     // Initialize date pickers
     initializeTaskDatePickers();
@@ -419,37 +424,54 @@ document.addEventListener('DOMContentLoaded', function() {
 function initializeTaskDatePickers() {
     const today = new Date().toISOString().split('T')[0];
     
+    // Get project dates for restrictions
+    const projectStartDate = currentProject?.start_date || today;
+    const projectEndDate = currentProject?.end_date;
+    const taskStartMin = projectStartDate > today ? projectStartDate : today;
+    
     // Task start date
     window.taskStartDatePicker = flatpickr('#task-start-date', {
-        minDate: today,
+        minDate: taskStartMin,
+        maxDate: projectEndDate || null,
         dateFormat: 'Y-m-d',
         onChange: function(selectedDates, dateStr, instance) {
             if (dateStr && window.taskEndDatePicker) {
                 window.taskEndDatePicker.set('minDate', dateStr);
+                // Also ensure end date doesn't exceed project end date
+                if (projectEndDate) {
+                    window.taskEndDatePicker.set('maxDate', projectEndDate);
+                }
             }
         }
     });
     
     // Task end date
     window.taskEndDatePicker = flatpickr('#task-end-date', {
-        minDate: today,
+        minDate: taskStartMin,
+        maxDate: projectEndDate || null,
         dateFormat: 'Y-m-d'
     });
     
-    // Edit task start date
+    // Edit task start date (reuse project dates from above)
     window.editTaskStartDatePicker = flatpickr('#edit-task-start-date', {
-        minDate: today,
+        minDate: taskStartMin,
+        maxDate: projectEndDate || null,
         dateFormat: 'Y-m-d',
         onChange: function(selectedDates, dateStr, instance) {
             if (dateStr && window.editTaskEndDatePicker) {
                 window.editTaskEndDatePicker.set('minDate', dateStr);
+                // Also ensure end date doesn't exceed project end date
+                if (projectEndDate) {
+                    window.editTaskEndDatePicker.set('maxDate', projectEndDate);
+                }
             }
         }
     });
     
     // Edit task end date
     window.editTaskEndDatePicker = flatpickr('#edit-task-end-date', {
-        minDate: today,
+        minDate: taskStartMin,
+        maxDate: projectEndDate || null,
         dateFormat: 'Y-m-d'
     });
 }
@@ -478,7 +500,7 @@ async function loadProjectDetails() {
         
     } catch (error) {
         console.error('Error loading project:', error);
-        alert('Failed to load project details: ' + error.message);
+        showError('Failed to load project details: ' + error.message);
     }
 }
 
@@ -845,6 +867,28 @@ function showAddSubtaskModal(parentTaskId) {
         }
     });
     
+    // Set date restrictions based on parent task timeline
+    const today = new Date().toISOString().split('T')[0];
+    const parentTask = currentTasks.find(t => t.task_id == parentTaskId);
+    
+    if (parentTask) {
+        const parentStartDate = parentTask.start_date || today;
+        const parentEndDate = parentTask.end_date;
+        const subtaskStartMin = parentStartDate > today ? parentStartDate : today;
+        
+        if (window.taskStartDatePicker) {
+            window.taskStartDatePicker.setDate(null);
+            window.taskStartDatePicker.set('minDate', subtaskStartMin);
+            window.taskStartDatePicker.set('maxDate', parentEndDate || null);
+        }
+        
+        if (window.taskEndDatePicker) {
+            window.taskEndDatePicker.setDate(null);
+            window.taskEndDatePicker.set('minDate', subtaskStartMin);
+            window.taskEndDatePicker.set('maxDate', parentEndDate || null);
+        }
+    }
+    
     const modal = new bootstrap.Modal(document.getElementById('addTaskModal'));
     modal.show();
 }
@@ -888,7 +932,7 @@ async function saveTask() {
         loadProjectDetails();
         
     } catch (error) {
-        alert('Failed to create task: ' + error.message);
+        showError('Failed to create task: ' + error.message);
     }
 }
 
@@ -896,7 +940,7 @@ async function saveTask() {
 async function editTask(taskId) {
     const task = currentTasks.find(t => t.task_id == taskId);
     if (!task) {
-        alert('Task not found');
+        showError('Task not found');
         return;
     }
     
@@ -913,7 +957,17 @@ async function editTask(taskId) {
     dependencySelect.innerHTML = '<option value="">No dependency</option>';
     currentTasks.forEach(t => {
         if (t.task_id != taskId) {
-            dependencySelect.innerHTML += `<option value="${t.task_id}" ${t.task_id == task.dependency_task_id ? 'selected' : ''}>${t.name}</option>`;
+            // If editing a subtask, only show parent tasks (not other subtasks)
+            if (task.parent_task_id) {
+                if (!t.parent_task_id) {
+                    dependencySelect.innerHTML += `<option value="${t.task_id}" ${t.task_id == task.dependency_task_id ? 'selected' : ''}>${t.name}</option>`;
+                }
+            } else {
+                // If editing a parent task, show all other parent tasks
+                if (!t.parent_task_id) {
+                    dependencySelect.innerHTML += `<option value="${t.task_id}" ${t.task_id == task.dependency_task_id ? 'selected' : ''}>${t.name}</option>`;
+                }
+            }
         }
     });
     
@@ -986,19 +1040,19 @@ async function updateTask() {
         loadProjectDetails();
         
     } catch (error) {
-        alert('Failed to update task: ' + error.message);
+        showError('Failed to update task: ' + error.message);
     }
 }
 
-// Show delete task confirmation modal
+// Show delete task confirmation toast
 let pendingDeleteTaskId = null;
 function showDeleteTaskModal(taskId, taskName, hasSubTasks = false) {
     pendingDeleteTaskId = taskId;
     document.getElementById('deleteConfirmTitle').textContent = 'Delete Task';
     const message = hasSubTasks 
-        ? `Are you sure you want to delete "${taskName}"? This will also delete all its sub-tasks. This action cannot be undone.`
-        : `Are you sure you want to delete "${taskName}"? This action cannot be undone.`;
-    document.getElementById('deleteConfirmMessage').textContent = message;
+        ? `<p>Are you sure you want to delete <strong>"${escapeHtml(taskName)}"</strong>?</p><p class="text-danger mb-0"><i class="fas fa-exclamation-triangle me-1"></i>This will also delete all its sub-tasks. This action cannot be undone.</p>`
+        : `<p>Are you sure you want to delete <strong>"${escapeHtml(taskName)}"</strong>?</p><p class="text-danger mb-0"><i class="fas fa-exclamation-triangle me-1"></i>This action cannot be undone.</p>`;
+    document.getElementById('deleteConfirmMessage').innerHTML = message;
     document.getElementById('deleteConfirmBtn').onclick = () => confirmDeleteTask(taskId);
     
     const modal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
@@ -1023,6 +1077,11 @@ async function confirmDeleteTask(taskId) {
             body: JSON.stringify({ task_id: parseInt(taskId) })
         });
         
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ error: 'Failed to delete task' }));
+            throw new Error(errorData.error || 'Failed to delete task');
+        }
+        
         const data = await response.json();
         
         if (data.error) {
@@ -1034,10 +1093,12 @@ async function confirmDeleteTask(taskId) {
         if (editModal) {
             editModal.hide();
         }
+        showSuccess('Task and all associated subtasks deleted successfully');
         loadProjectDetails();
         
     } catch (error) {
-        alert('Failed to delete task: ' + error.message);
+        console.error('Delete task error:', error);
+        showError('Failed to delete task: ' + error.message);
     }
 }
 
@@ -1045,7 +1106,7 @@ async function confirmDeleteTask(taskId) {
 async function updateTaskProgress(taskId, progress) {
     const task = currentTasks.find(t => t.task_id == taskId);
     if (!task) {
-        alert('Task not found');
+        showError('Task not found');
         return;
     }
     
@@ -1078,7 +1139,7 @@ async function updateTaskProgress(taskId, progress) {
         
     } catch (error) {
         console.error('Error updating task progress:', error);
-        alert('Failed to update task progress: ' + error.message);
+        showError('Failed to update task progress: ' + error.message);
     }
 }
 
@@ -1126,7 +1187,7 @@ async function updateProject() {
         loadProjectDetails();
         
     } catch (error) {
-        alert('Failed to update project: ' + error.message);
+        showError('Failed to update project: ' + error.message);
     }
 }
 

@@ -125,17 +125,39 @@ function ensureTablesExist($conn) {
         )");
         
         // 8. Resource notifications (depends on resources and projects)
-        $conn->query("CREATE TABLE IF NOT EXISTS resource_notifications (
-            notification_id INT AUTO_INCREMENT PRIMARY KEY,
-            resource_id INT,
-            project_id INT,
-            notification_type ENUM('over_utilization', 'under_utilization', 'balancing_recommendation', 'system_alert') NOT NULL,
-            message TEXT NOT NULL,
-            is_read BOOLEAN DEFAULT FALSE,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (resource_id) REFERENCES resources(resource_id) ON DELETE SET NULL,
-            FOREIGN KEY (project_id) REFERENCES projects(project_id) ON DELETE CASCADE
-        )");
+        // First check if table exists and alter ENUM if needed
+        $result = $conn->query("SHOW TABLES LIKE 'resource_notifications'");
+        if ($result->num_rows > 0) {
+            // Table exists, check if we need to alter the ENUM
+            $result = $conn->query("SHOW COLUMNS FROM resource_notifications LIKE 'notification_type'");
+            if ($result->num_rows > 0) {
+                // Alter the ENUM to include new notification types
+                $conn->query("ALTER TABLE resource_notifications MODIFY notification_type ENUM(
+                    'over_utilization', 'under_utilization', 'balancing_recommendation', 'system_alert',
+                    'project_due_date', 'project_near_deadline',
+                    'task_due_date', 'task_near_deadline',
+                    'subtask_due_date', 'subtask_near_deadline'
+                ) NOT NULL");
+            }
+        } else {
+            // Create table with all notification types
+            $conn->query("CREATE TABLE IF NOT EXISTS resource_notifications (
+                notification_id INT AUTO_INCREMENT PRIMARY KEY,
+                resource_id INT,
+                project_id INT,
+                notification_type ENUM(
+                    'over_utilization', 'under_utilization', 'balancing_recommendation', 'system_alert',
+                    'project_due_date', 'project_near_deadline',
+                    'task_due_date', 'task_near_deadline',
+                    'subtask_due_date', 'subtask_near_deadline'
+                ) NOT NULL,
+                message TEXT NOT NULL,
+                is_read BOOLEAN DEFAULT FALSE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (resource_id) REFERENCES resources(resource_id) ON DELETE SET NULL,
+                FOREIGN KEY (project_id) REFERENCES projects(project_id) ON DELETE CASCADE
+            )");
+        }
     }
 }
 

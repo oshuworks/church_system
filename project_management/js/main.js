@@ -11,18 +11,50 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // Initialize notification system
+let notificationIntervals = [];
 function initializeNotificationSystem() {
+    // Prevent duplicate initialization
+    if (window.notificationSystemInitialized) {
+        return;
+    }
+    window.notificationSystemInitialized = true;
+    
+    // Load notifications first
     loadNotifications();
+    
+    // Check for deadline notifications on page load (this will also reload notifications)
+    checkDeadlineNotifications();
+    
+    // Check for new notifications (resource balancing, etc.)
     checkForNewNotifications();
 
     // Check for notifications every 5 minutes
-    setInterval(checkForNewNotifications, 5 * 60 * 1000);
+    notificationIntervals.push(setInterval(checkForNewNotifications, 5 * 60 * 1000));
+    // Check for deadline notifications every hour
+    notificationIntervals.push(setInterval(checkDeadlineNotifications, 60 * 60 * 1000));
+}
+
+// Check and create deadline notifications
+async function checkDeadlineNotifications() {
+    try {
+        const response = await fetch('api/deadline_notifications.php');
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        // Always reload notifications after checking deadlines to show any new ones
+        // Even if no new notifications were created, we want to show existing ones
+        loadNotifications();
+    } catch (error) {
+        console.error('Error checking deadline notifications:', error);
+    }
 }
 
 // Load notifications for display
 async function loadNotifications() {
     try {
-        const response = await fetch('api/notifications_api.php?unread_only=true');
+        // Load deadline notifications (both read and unread to show the list)
+        const response = await fetch('api/notifications_api.php?deadline_only=true');
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -33,6 +65,7 @@ async function loadNotifications() {
             throw new Error(data.error);
         }
 
+        console.log('Loaded notifications:', data.notifications?.length || 0, data.notifications);
         displayNotifications(data.notifications || []);
 
     } catch (error) {
@@ -50,7 +83,15 @@ function displayNotifications(notifications) {
     const existingNotifications = notificationsList.querySelectorAll('.notification-item');
     existingNotifications.forEach(item => item.remove());
 
-    if (!notifications || notifications.length === 0) {
+    // Filter to show only deadline notifications
+    const deadlineNotifications = notifications.filter(n => 
+        n.notification_type && (
+            n.notification_type.includes('due_date') || 
+            n.notification_type.includes('near_deadline')
+        )
+    );
+
+    if (!deadlineNotifications || deadlineNotifications.length === 0) {
         noNotificationsItem.style.display = 'block';
         notificationCount.style.display = 'none';
         return;
@@ -59,22 +100,29 @@ function displayNotifications(notifications) {
     // Hide "no notifications" message
     noNotificationsItem.style.display = 'none';
 
-    // Show notification count
-    notificationCount.textContent = notifications.length;
-    notificationCount.style.display = 'inline-block';
+    // Show notification count (unread deadline notifications only)
+    const unreadDeadlineCount = deadlineNotifications.filter(n => !n.is_read).length;
+    if (unreadDeadlineCount > 0) {
+        notificationCount.textContent = unreadDeadlineCount;
+        notificationCount.style.display = 'inline-block';
+    } else {
+        notificationCount.style.display = 'none';
+    }
 
-    // Add notifications
+    // Sort notifications: unread first, then by date (newest first)
+    deadlineNotifications.sort((a, b) => {
+        if (a.is_read !== b.is_read) {
+            return a.is_read ? 1 : -1;
+        }
+        return new Date(b.created_at) - new Date(a.created_at);
+    });
+
+    // Add notifications (show all deadline notifications)
     const divider = notificationsList.querySelector('.dropdown-divider');
-    notifications.slice(0, 5).forEach(notification => {
+    deadlineNotifications.forEach(notification => {
         const notificationItem = createNotificationItem(notification);
         notificationsList.insertBefore(notificationItem, divider);
     });
-
-    if (notifications.length > 5) {
-        const moreItem = document.createElement('li');
-        moreItem.innerHTML = `<a class="dropdown-item text-center text-muted" href="#">... and ${notifications.length - 5} more</a>`;
-        notificationsList.insertBefore(moreItem, divider);
-    }
 }
 
 // Create notification item element
@@ -85,14 +133,33 @@ function createNotificationItem(notification) {
     const typeClass = getNotificationTypeClass(notification.notification_type);
     const timeAgo = getTimeAgo(notification.created_at);
 
+    const title = notification.resource_name || notification.project_name || 'System';
+    const badgeClass = notification.badge_class || typeClass;
+    
+    // Determine notification type label
+    let typeLabel = '';
+    if (notification.notification_type === 'project_due_date') {
+        typeLabel = '<span class="badge bg-danger me-1">Due Today</span>';
+    } else if (notification.notification_type === 'project_near_deadline') {
+        typeLabel = '<span class="badge bg-warning me-1">Near Deadline</span>';
+    } else if (notification.notification_type === 'task_due_date') {
+        typeLabel = '<span class="badge bg-danger me-1">Task Due Today</span>';
+    } else if (notification.notification_type === 'task_near_deadline') {
+        typeLabel = '<span class="badge bg-warning me-1">Task Near Deadline</span>';
+    } else if (notification.notification_type === 'subtask_due_date') {
+        typeLabel = '<span class="badge bg-danger me-1">Subtask Due Today</span>';
+    } else if (notification.notification_type === 'subtask_near_deadline') {
+        typeLabel = '<span class="badge bg-warning me-1">Subtask Near Deadline</span>';
+    }
+    
     item.innerHTML = `
         <a class="dropdown-item ${notification.is_read ? 'text-muted' : ''}" href="#" onclick="markNotificationRead(${notification.notification_id})">
             <div class="d-flex align-items-start">
                 <div class="me-2">
-                    <span class="badge ${typeClass}">${getNotificationTypeIcon(notification.notification_type)}</span>
+                    <span class="badge ${badgeClass}">${getNotificationTypeIcon(notification.notification_type)}</span>
                 </div>
                 <div class="flex-grow-1">
-                    <div class="small fw-bold">${notification.resource_name || 'System'}</div>
+                    <div class="small fw-bold mb-1">${typeLabel}${title}</div>
                     <div class="small">${notification.message}</div>
                     <div class="small text-muted">${timeAgo}</div>
                 </div>
@@ -108,13 +175,21 @@ function createNotificationItem(notification) {
 function getNotificationTypeClass(type) {
     switch (type) {
         case 'over_utilization':
-            return 'bg-dark';
+            return 'bg-danger';
         case 'under_utilization':
-            return 'bg-dark text-white';
+            return 'bg-info';
         case 'balancing_recommendation':
             return 'bg-primary';
         case 'system_alert':
             return 'bg-secondary';
+        case 'project_due_date':
+        case 'task_due_date':
+        case 'subtask_due_date':
+            return 'bg-danger';
+        case 'project_near_deadline':
+        case 'task_near_deadline':
+        case 'subtask_near_deadline':
+            return 'bg-warning';
         default:
             return 'bg-primary';
     }
@@ -131,6 +206,14 @@ function getNotificationTypeIcon(type) {
             return '⚖️';
         case 'system_alert':
             return '🔔';
+        case 'project_due_date':
+        case 'task_due_date':
+        case 'subtask_due_date':
+            return '🔴';
+        case 'project_near_deadline':
+        case 'task_near_deadline':
+        case 'subtask_near_deadline':
+            return '🟡';
         default:
             return '📋';
     }
@@ -196,11 +279,11 @@ async function markAllNotificationsRead() {
 
         // Reload notifications
         loadNotifications();
-        alert('All notifications marked as read');
+        showSuccess('All notifications marked as read');
 
     } catch (error) {
         console.error('Error marking all notifications as read:', error);
-        alert('Failed to mark notifications as read');
+        showError('Failed to mark notifications as read');
     }
 }
 
@@ -230,27 +313,187 @@ async function checkForNewNotifications() {
 
 // Show system notification (toast)
 function showSystemNotification(message) {
-    // Create a simple toast notification
+    showToast(message, 'info');
+}
+
+/**
+ * Toast Notification System
+ * Creates beautiful, animated toast notifications
+ */
+
+// Ensure toast container exists
+function getToastContainer() {
+    let container = document.getElementById('toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toast-container';
+        container.className = 'toast-container';
+        document.body.appendChild(container);
+    }
+    return container;
+}
+
+/**
+ * Show a toast notification
+ * @param {string} message - The message to display
+ * @param {string} type - Type: 'success', 'error', 'warning', 'info'
+ * @param {string} title - Optional title
+ * @param {number} duration - Duration in milliseconds (default: 5000, 0 = no auto-dismiss)
+ */
+function showToast(message, type = 'info', title = null, duration = 5000) {
+    const container = getToastContainer();
     const toast = document.createElement('div');
-    toast.className = 'toast align-items-center text-white bg-primary border-0';
-    toast.setAttribute('role', 'alert');
+    toast.className = `toast-notification toast-${type}`;
+    
+    // Get icon based on type
+    const icons = {
+        success: '<i class="fas fa-check-circle"></i>',
+        error: '<i class="fas fa-exclamation-circle"></i>',
+        warning: '<i class="fas fa-exclamation-triangle"></i>',
+        info: '<i class="fas fa-info-circle"></i>'
+    };
+    
+    const icon = icons[type] || icons.info;
+    const displayTitle = title || (type === 'success' ? 'Success' : type === 'error' ? 'Error' : type === 'warning' ? 'Warning' : 'Information');
+    
     toast.innerHTML = `
-        <div class="d-flex">
-            <div class="toast-body">
-                <i class="fas fa-info-circle me-2"></i>${message}
-            </div>
-            <button type="button" class="btn-close btn-close-white me-2 m-auto" onclick="this.parentElement.parentElement.remove()"></button>
+        <div class="toast-icon">${icon}</div>
+        <div class="toast-content">
+            ${title ? `<div class="toast-title">${displayTitle}</div>` : ''}
+            <div class="toast-message">${message}</div>
         </div>
+        <button type="button" class="toast-close" onclick="removeToast(this.closest('.toast-notification'))">
+            <i class="fas fa-times"></i>
+        </button>
+        ${duration > 0 ? '<div class="toast-progress"><div class="toast-progress-bar" style="animation-duration: ' + duration + 'ms;"></div></div>' : ''}
     `;
-
-    // Add to page
-    const container = document.querySelector('.container') || document.body;
-    container.insertBefore(toast, container.firstChild);
-
-    // Show and auto-hide
-    setTimeout(() => toast.classList.add('show'), 100);
+    
+    container.appendChild(toast);
+    
+    // Trigger animation
     setTimeout(() => {
-        toast.classList.remove('show');
-        setTimeout(() => toast.remove(), 300);
-    }, 5000);
+        toast.style.opacity = '1';
+    }, 10);
+    
+    // Auto-remove if duration is set
+    if (duration > 0) {
+        setTimeout(() => {
+            removeToast(toast);
+        }, duration);
+    }
+    
+    return toast;
+}
+
+/**
+ * Remove a toast notification
+ */
+function removeToast(toast) {
+    if (!toast) return;
+    
+    toast.classList.add('toast-exiting');
+    setTimeout(() => {
+        if (toast.parentNode) {
+            toast.parentNode.removeChild(toast);
+        }
+    }, 300);
+}
+
+/**
+ * Show success toast
+ */
+function showSuccess(message, title = 'Success') {
+    return showToast(message, 'success', title);
+}
+
+/**
+ * Show error toast
+ */
+function showError(message, title = 'Error') {
+    return showToast(message, 'error', title);
+}
+
+/**
+ * Show warning toast
+ */
+function showWarning(message, title = 'Warning') {
+    return showToast(message, 'warning', title);
+}
+
+/**
+ * Show info toast
+ */
+function showInfo(message, title = 'Information') {
+    return showToast(message, 'info', title);
+}
+
+/**
+ * Show confirmation toast (for deletions and critical actions)
+ * @param {string} message - The confirmation message
+ * @param {string} title - Optional title
+ * @param {function} onConfirm - Callback when confirmed
+ * @param {function} onCancel - Optional callback when cancelled
+ * @param {string} confirmText - Text for confirm button (default: 'Delete')
+ * @param {string} cancelText - Text for cancel button (default: 'Cancel')
+ */
+function showConfirmToast(message, title = 'Confirm Action', onConfirm, onCancel = null, confirmText = 'Delete', cancelText = 'Cancel') {
+    const container = getToastContainer();
+    const toast = document.createElement('div');
+    toast.className = 'toast-notification toast-confirmation';
+    
+    toast.innerHTML = `
+        <div class="toast-icon">
+            <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <div class="toast-content">
+            <div class="toast-title">${title}</div>
+            <div class="toast-message">${message}</div>
+            <div class="toast-confirmation-actions">
+                <button type="button" class="btn btn-cancel" onclick="handleToastCancel(this)">
+                    <i class="fas fa-times me-1"></i>${cancelText}
+                </button>
+                <button type="button" class="btn btn-confirm" onclick="handleToastConfirm(this)">
+                    <i class="fas fa-trash me-1"></i>${confirmText}
+                </button>
+            </div>
+        </div>
+        <button type="button" class="toast-close" onclick="handleToastCancel(this)">
+            <i class="fas fa-times"></i>
+        </button>
+    `;
+    
+    // Store callbacks in toast element
+    toast._onConfirm = onConfirm;
+    toast._onCancel = onCancel;
+    
+    container.appendChild(toast);
+    
+    // Trigger animation
+    setTimeout(() => {
+        toast.style.opacity = '1';
+    }, 10);
+    
+    return toast;
+}
+
+/**
+ * Handle toast confirmation
+ */
+function handleToastConfirm(button) {
+    const toast = button.closest('.toast-notification');
+    if (toast && toast._onConfirm) {
+        toast._onConfirm();
+    }
+    removeToast(toast);
+}
+
+/**
+ * Handle toast cancellation
+ */
+function handleToastCancel(button) {
+    const toast = button.closest('.toast-notification');
+    if (toast && toast._onCancel) {
+        toast._onCancel();
+    }
+    removeToast(toast);
 }

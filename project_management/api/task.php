@@ -102,9 +102,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
     
+    // Validate task dates are within project timeline
+    if ($start_date || $end_date) {
+        $stmt = $conn->prepare("SELECT start_date, end_date FROM projects WHERE project_id = ?");
+        $stmt->bind_param("i", $project_id);
+        $stmt->execute();
+        $project_result = $stmt->get_result()->fetch_assoc();
+        
+        if ($project_result) {
+            $project_start = $project_result['start_date'];
+            $project_end = $project_result['end_date'];
+            
+            // Validate start date
+            if ($start_date) {
+                if ($project_start && strtotime($start_date) < strtotime($project_start)) {
+                    http_response_code(400);
+                    echo json_encode(['error' => 'Task start date cannot be before project start date']);
+                    exit;
+                }
+                if ($project_end && strtotime($start_date) > strtotime($project_end)) {
+                    http_response_code(400);
+                    echo json_encode(['error' => 'Task start date cannot be after project end date']);
+                    exit;
+                }
+            }
+            
+            // Validate end date
+            if ($end_date) {
+                if ($project_start && strtotime($end_date) < strtotime($project_start)) {
+                    http_response_code(400);
+                    echo json_encode(['error' => 'Task end date cannot be before project start date']);
+                    exit;
+                }
+                if ($project_end && strtotime($end_date) > strtotime($project_end)) {
+                    http_response_code(400);
+                    echo json_encode(['error' => 'Task end date cannot be after project end date']);
+                    exit;
+                }
+            }
+        }
+    }
+    
     // Validate dependency (check if dependency task exists and belongs to same project)
     if ($dependency_task_id) {
-        $stmt = $conn->prepare("SELECT project_id FROM tasks WHERE task_id = ?");
+        $stmt = $conn->prepare("SELECT project_id, parent_task_id FROM tasks WHERE task_id = ?");
         $stmt->bind_param("i", $dependency_task_id);
         $stmt->execute();
         $dep_result = $stmt->get_result()->fetch_assoc();
@@ -114,11 +155,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo json_encode(['error' => 'Invalid dependency task']);
             exit;
         }
+        
+        // If this is a subtask, it can only depend on parent tasks (not other subtasks)
+        if ($parent_task_id && $dep_result['parent_task_id']) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Subtasks can only depend on parent tasks, not other subtasks']);
+            exit;
+        }
+        
+        // Prevent circular dependencies - check if dependency task depends on this task
+        if ($dependency_task_id == $parent_task_id) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Task cannot depend on its parent task']);
+            exit;
+        }
     }
     
     // Validate parent task (check if parent task exists and belongs to same project)
     if ($parent_task_id) {
-        $stmt = $conn->prepare("SELECT project_id, parent_task_id FROM tasks WHERE task_id = ?");
+        $stmt = $conn->prepare("SELECT project_id, parent_task_id, start_date, end_date FROM tasks WHERE task_id = ?");
         $stmt->bind_param("i", $parent_task_id);
         $stmt->execute();
         $parent_result = $stmt->get_result()->fetch_assoc();
@@ -134,6 +189,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             http_response_code(400);
             echo json_encode(['error' => 'Cannot add subtask to a task that is already a subtask']);
             exit;
+        }
+        
+        // Validate that subtask dates are within parent task dates
+        if ($start_date || $end_date) {
+            $parent_start = $parent_result['start_date'];
+            $parent_end = $parent_result['end_date'];
+            
+            if ($start_date && $parent_start && strtotime($start_date) < strtotime($parent_start)) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Subtask start date cannot be before parent task start date']);
+                exit;
+            }
+            
+            if ($end_date && $parent_end && strtotime($end_date) > strtotime($parent_end)) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Subtask end date cannot be after parent task end date']);
+                exit;
+            }
+            
+            if ($start_date && $parent_end && strtotime($start_date) > strtotime($parent_end)) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Subtask start date cannot be after parent task end date']);
+                exit;
+            }
         }
     }
     
@@ -207,6 +286,68 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
         exit;
     }
     
+    // Get current task info for validation
+    $stmt = $conn->prepare("SELECT project_id, parent_task_id, start_date as current_start_date, end_date as current_end_date FROM tasks WHERE task_id = ?");
+    $stmt->bind_param("i", $task_id);
+    $stmt->execute();
+    $current_task = $stmt->get_result()->fetch_assoc();
+    
+    if (!$current_task) {
+        http_response_code(404);
+        echo json_encode(['error' => 'Task not found']);
+        exit;
+    }
+    
+    // Use provided project_id or get from current task
+    if (!$project_id) {
+        $project_id = $current_task['project_id'];
+    }
+    
+    // Validate task dates are within project timeline (if dates are being updated and it's not a subtask)
+    if (($start_date !== null || $end_date !== null) && !$current_task['parent_task_id']) {
+        $stmt = $conn->prepare("SELECT start_date, end_date FROM projects WHERE project_id = ?");
+        $stmt->bind_param("i", $project_id);
+        $stmt->execute();
+        $project_result = $stmt->get_result()->fetch_assoc();
+        
+        if ($project_result) {
+            $project_start = $project_result['start_date'];
+            $project_end = $project_result['end_date'];
+            
+            // Get dates to validate (use provided or current)
+            $validate_start_date = $start_date !== null ? $start_date : $current_task['current_start_date'];
+            $validate_end_date = $end_date !== null ? $end_date : $current_task['current_end_date'];
+            
+            // Validate start date
+            if ($validate_start_date) {
+                if ($project_start && strtotime($validate_start_date) < strtotime($project_start)) {
+                    http_response_code(400);
+                    echo json_encode(['error' => 'Task start date cannot be before project start date']);
+                    exit;
+                }
+                if ($project_end && strtotime($validate_start_date) > strtotime($project_end)) {
+                    http_response_code(400);
+                    echo json_encode(['error' => 'Task start date cannot be after project end date']);
+                    exit;
+                }
+            }
+            
+            // Validate end date
+            if ($validate_end_date) {
+                if ($project_start && strtotime($validate_end_date) < strtotime($project_start)) {
+                    http_response_code(400);
+                    echo json_encode(['error' => 'Task end date cannot be before project start date']);
+                    exit;
+                }
+                if ($project_end && strtotime($validate_end_date) > strtotime($project_end)) {
+                    http_response_code(400);
+                    echo json_encode(['error' => 'Task end date cannot be after project end date']);
+                    exit;
+                }
+            }
+        }
+    }
+    
     // Prevent circular dependencies
     if ($dependency_task_id == $task_id) {
         http_response_code(400);
@@ -216,7 +357,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
     
     // Validate dependency
     if ($dependency_task_id) {
-        $stmt = $conn->prepare("SELECT project_id FROM tasks WHERE task_id = ?");
+        $stmt = $conn->prepare("SELECT project_id, parent_task_id FROM tasks WHERE task_id = ?");
         $stmt->bind_param("i", $dependency_task_id);
         $stmt->execute();
         $dep_result = $stmt->get_result()->fetch_assoc();
@@ -227,19 +368,52 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
             exit;
         }
         
-        // Get current task's project_id if not provided
-        if (!$project_id) {
-            $stmt = $conn->prepare("SELECT project_id FROM tasks WHERE task_id = ?");
-            $stmt->bind_param("i", $task_id);
-            $stmt->execute();
-            $current_task = $stmt->get_result()->fetch_assoc();
-            $project_id = $current_task['project_id'];
-        }
-        
         if ($dep_result['project_id'] != $project_id) {
             http_response_code(400);
             echo json_encode(['error' => 'Dependency task must belong to the same project']);
             exit;
+        }
+        
+        // If current task is a subtask, it can only depend on parent tasks (not other subtasks)
+        if ($current_task['parent_task_id'] && $dep_result['parent_task_id']) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Subtasks can only depend on parent tasks, not other subtasks']);
+            exit;
+        }
+    }
+    
+    // Validate parent task dates if this is a subtask and dates are being updated
+    if ($current_task['parent_task_id'] && ($start_date !== null || $end_date !== null)) {
+        $stmt = $conn->prepare("SELECT start_date, end_date FROM tasks WHERE task_id = ?");
+        $stmt->bind_param("i", $current_task['parent_task_id']);
+        $stmt->execute();
+        $parent_result = $stmt->get_result()->fetch_assoc();
+        
+        if ($parent_result) {
+            // Get dates to validate (use provided or current)
+            $validate_start_date = $start_date !== null ? $start_date : $current_task['current_start_date'];
+            $validate_end_date = $end_date !== null ? $end_date : $current_task['current_end_date'];
+            
+            $parent_start = $parent_result['start_date'];
+            $parent_end = $parent_result['end_date'];
+            
+            if ($validate_start_date && $parent_start && strtotime($validate_start_date) < strtotime($parent_start)) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Subtask start date cannot be before parent task start date']);
+                exit;
+            }
+            
+            if ($validate_end_date && $parent_end && strtotime($validate_end_date) > strtotime($parent_end)) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Subtask end date cannot be after parent task end date']);
+                exit;
+            }
+            
+            if ($validate_start_date && $parent_end && strtotime($validate_start_date) > strtotime($parent_end)) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Subtask start date cannot be after parent task end date']);
+                exit;
+            }
         }
     }
     
@@ -347,6 +521,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
     }
     
     try {
+        // Start transaction for cascade deletion
+        $conn->begin_transaction();
+        
         // Get parent_task_id before deletion (to update parent progress)
         $stmt = $conn->prepare("SELECT parent_task_id FROM tasks WHERE task_id = ?");
         $stmt->bind_param("i", $task_id);
@@ -354,30 +531,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
         $task_result = $stmt->get_result()->fetch_assoc();
         $parent_task_id = $task_result['parent_task_id'] ?? null;
         
-        // Check if task has subtasks
-        $stmt = $conn->prepare("SELECT COUNT(*) as subtask_count FROM tasks WHERE parent_task_id = ?");
+        // Delete all subtasks first (cascade delete)
+        $stmt = $conn->prepare("DELETE FROM tasks WHERE parent_task_id = ?");
         $stmt->bind_param("i", $task_id);
         $stmt->execute();
-        $subtask_result = $stmt->get_result()->fetch_assoc();
         
-        if ($subtask_result['subtask_count'] > 0) {
-            http_response_code(400);
-            echo json_encode(['error' => 'Cannot delete task that has subtasks. Please delete or move subtasks first.']);
-            exit;
-        }
-        
-        // Check if task is a dependency for other tasks
-        $stmt = $conn->prepare("SELECT COUNT(*) as dependent_count FROM tasks WHERE dependency_task_id = ?");
+        // Remove dependency references to this task (set to NULL)
+        $stmt = $conn->prepare("UPDATE tasks SET dependency_task_id = NULL WHERE dependency_task_id = ?");
         $stmt->bind_param("i", $task_id);
         $stmt->execute();
-        $result = $stmt->get_result()->fetch_assoc();
         
-        if ($result['dependent_count'] > 0) {
-            http_response_code(400);
-            echo json_encode(['error' => 'Cannot delete task that other tasks depend on. Please update or delete dependent tasks first.']);
-            exit;
-        }
-        
+        // Delete the task itself
         $stmt = $conn->prepare("DELETE FROM tasks WHERE task_id = ?");
         $stmt->bind_param("i", $task_id);
         
@@ -387,13 +551,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
                 updateParentTaskProgress($conn, $parent_task_id);
             }
             
-            echo json_encode(['success' => true, 'message' => 'Task deleted successfully']);
+            $conn->commit();
+            echo json_encode(['success' => true, 'message' => 'Task and all associated subtasks deleted successfully']);
         } else {
+            $conn->rollback();
             http_response_code(500);
             echo json_encode(['error' => 'Failed to delete task']);
         }
         
     } catch (Exception $e) {
+        $conn->rollback();
         http_response_code(500);
         echo json_encode(['error' => 'Database error: ' . $e->getMessage()]);
     }

@@ -207,29 +207,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
     }
     
     try {
-        // Check if project has tasks
-        $stmt = $conn->prepare("SELECT COUNT(*) as task_count FROM tasks WHERE project_id = ?");
+        // Start transaction for cascade deletion
+        $conn->begin_transaction();
+        
+        // Delete all subtasks first (tasks that have parent_task_id)
+        $stmt = $conn->prepare("DELETE FROM tasks WHERE project_id = ? AND parent_task_id IS NOT NULL");
         $stmt->bind_param("i", $project_id);
         $stmt->execute();
-        $result = $stmt->get_result()->fetch_assoc();
         
-        if ($result['task_count'] > 0) {
-            http_response_code(400);
-            echo json_encode(['error' => 'Cannot delete project with existing tasks. Please delete tasks first.']);
-            exit;
-        }
+        // Delete all parent tasks
+        $stmt = $conn->prepare("DELETE FROM tasks WHERE project_id = ?");
+        $stmt->bind_param("i", $project_id);
+        $stmt->execute();
         
+        // Delete the project
         $stmt = $conn->prepare("DELETE FROM projects WHERE project_id = ?");
         $stmt->bind_param("i", $project_id);
         
         if ($stmt->execute()) {
-            echo json_encode(['success' => true, 'message' => 'Project deleted successfully']);
+            $conn->commit();
+            echo json_encode(['success' => true, 'message' => 'Project and all associated tasks deleted successfully']);
         } else {
+            $conn->rollback();
             http_response_code(500);
             echo json_encode(['error' => 'Failed to delete project']);
         }
         
     } catch (Exception $e) {
+        $conn->rollback();
         http_response_code(500);
         echo json_encode(['error' => 'Database error: ' . $e->getMessage()]);
     }
