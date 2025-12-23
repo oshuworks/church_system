@@ -49,12 +49,34 @@
             </div>
         </div>
 
-        <!-- SEARCH -->
-        <div class="mb-3 position-relative">
-            <i class="fas fa-search position-absolute" style="left: 15px; top: 50%; transform: translateY(-50%); color: #000000;"></i>
-            <input type="text" class="form-control bg-dark text-dark border-secondary" 
-                   id="projectSearchInput" placeholder="Search projects..." 
-                   onkeyup="filterProjects()" style="padding-left: 40px;">
+        <!-- SEARCH AND SORT -->
+        <div class="row mb-3">
+            <div class="col-md-8">
+                <div class="position-relative">
+                    <i class="fas fa-search position-absolute" style="left: 15px; top: 50%; transform: translateY(-50%); color: #000000;"></i>
+                    <input type="text" class="form-control bg-dark text-dark border-secondary" 
+                           id="projectSearchInput" placeholder="Search projects..." 
+                           onkeyup="filterProjects()" style="padding-left: 40px;">
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="d-flex align-items-center gap-2">
+                    <label class="mb-0 small text-muted"><i class="fas fa-sort me-1"></i>Sort by:</label>
+                    <select class="form-select form-select-sm" id="projectSortSelect" onchange="sortProjects()">
+                        <option value="priority">Priority (Default)</option>
+                        <option value="name-asc">Name (A-Z)</option>
+                        <option value="name-desc">Name (Z-A)</option>
+                        <option value="date-asc">Start Date (Oldest First)</option>
+                        <option value="date-desc">Start Date (Newest First)</option>
+                        <option value="end-date-asc">End Date (Oldest First)</option>
+                        <option value="end-date-desc">End Date (Newest First)</option>
+                        <option value="budget-asc">Budget (Low to High)</option>
+                        <option value="budget-desc">Budget (High to Low)</option>
+                        <option value="progress-asc">Progress (Low to High)</option>
+                        <option value="progress-desc">Progress (High to Low)</option>
+                    </select>
+                </div>
+            </div>
         </div>
 
         <!-- PROJECT CARDS GRID -->
@@ -64,11 +86,23 @@
             $result = $conn->query("
                 SELECT p.*, 
                        COUNT(DISTINCT t.task_id) as task_count,
-                       COUNT(DISTINCT CASE WHEN t.progress_percent = 100 THEN t.task_id END) as completed_tasks
+                       COUNT(DISTINCT CASE WHEN t.progress_percent = 100 THEN t.task_id END) as completed_tasks,
+                       COUNT(DISTINCT CASE WHEN t.end_date < CURDATE() AND t.progress_percent < 100 THEN t.task_id END) as overdue_tasks,
+                       CASE 
+                           WHEN (COUNT(DISTINCT CASE WHEN t.progress_percent = 100 THEN t.task_id END) = COUNT(DISTINCT t.task_id) AND COUNT(DISTINCT t.task_id) > 0) THEN 3
+                           WHEN (COUNT(DISTINCT CASE WHEN t.end_date < CURDATE() AND t.progress_percent < 100 THEN t.task_id END) > 0) OR (p.end_date < CURDATE() AND COUNT(DISTINCT CASE WHEN t.progress_percent = 100 THEN t.task_id END) < COUNT(DISTINCT t.task_id)) THEN 1
+                           ELSE 2
+                       END as sort_priority,
+                       CASE 
+                           WHEN (COUNT(DISTINCT CASE WHEN t.progress_percent = 100 THEN t.task_id END) = COUNT(DISTINCT t.task_id) AND COUNT(DISTINCT t.task_id) > 0) THEN 
+                               COALESCE(-TO_DAYS(p.end_date), 0)
+                           ELSE 
+                               COALESCE(TO_DAYS(p.end_date), 0)
+                       END as sort_date
                 FROM projects p
                 LEFT JOIN tasks t ON p.project_id = t.project_id
                 GROUP BY p.project_id
-                ORDER BY p.created_at DESC
+                ORDER BY sort_priority ASC, sort_date ASC, p.created_at DESC
             ");
 
             if ($result->num_rows === 0) {
@@ -82,17 +116,30 @@
                 }
                 $progress_class = $overall_progress === 100 ? 'bg-primary' : ($overall_progress > 0 ? 'bg-dark' : 'bg-secondary');
                 
-                echo "<div class='col-md-6 col-lg-4 project-card' data-project-id='" . $row['project_id'] . "'>";
+                $start_date_timestamp = $row['start_date'] ? strtotime($row['start_date']) : 0;
+                $end_date_timestamp = $row['end_date'] ? strtotime($row['end_date']) : 0;
+                $budget_value = $row['budget'] ?? 0;
+                
+                echo "<div class='col-md-6 col-lg-4 project-card' 
+                          data-project-id='" . $row['project_id'] . "'
+                          data-name='" . htmlspecialchars(strtolower($row['name']), ENT_QUOTES) . "'
+                          data-start-date='" . $start_date_timestamp . "'
+                          data-end-date='" . $end_date_timestamp . "'
+                          data-budget='" . $budget_value . "'
+                          data-progress='" . $overall_progress . "'
+                          data-priority='" . $row['sort_priority'] . "'>";
                 echo "    <div class='card h-100 bg-white border-secondary shadow-sm'>";
                 echo "        <div class='card-body d-flex flex-column'>";
-                echo "            <h5 class='card-title mb-3'>";
+                echo "            <h5 class='card-title mb-3 card-title-truncate'>";
                 echo "                <a class='text-decoration-none text-primary fw-bold' 
-                       href='javascript:void(0)' onclick='showProjectDetailsModal(" . $row['project_id'] . ")'>";
+                       href='javascript:void(0)' onclick='showProjectDetailsModal(" . $row['project_id'] . ")' 
+                       title='" . htmlspecialchars($row['name'], ENT_QUOTES) . "'>";
                 echo "                   " . htmlspecialchars($row['name']) . "";
                 echo "                </a>";
                 echo "            </h5>";
                 
-                echo "            <p class='card-text text-muted small flex-grow-1 mb-3'>";
+                echo "            <p class='card-text text-muted small flex-grow-1 mb-3 card-text-truncate' 
+                       title='" . htmlspecialchars($row['description'] ?? 'No description', ENT_QUOTES) . "'>";
                 echo "                " . htmlspecialchars($row['description'] ?? 'No description') . "";
                 echo "            </p>";
                 
@@ -124,10 +171,14 @@
                 echo "                </div>";
                 echo "            </div>";
                 
-                echo "            <div class='d-flex gap-2 mt-auto'>";
+                echo "            <div class='d-flex gap-2 mt-auto justify-content-end'>";
                 echo "                <button onclick='showProjectDetailsModal(" . $row['project_id'] . ")' 
-                       class='btn btn-primary btn-sm flex-fill'>";
+                       class='btn btn-primary btn-sm'>";
                 echo "                    <i class='fas fa-eye me-1'></i>View";
+                echo "                </button>";
+                echo "                <button onclick='openFullDetails(" . $row['project_id'] . ")' 
+                       class='btn btn-outline-primary btn-sm'>";
+                echo "                    <i class='fas fa-external-link-alt me-1'></i>";
                 echo "                </button>";
                 echo "                <button onclick='showEditProjectModal(" . $row['project_id'] . ")' 
                         class='btn btn-outline-primary btn-sm'>";
@@ -170,31 +221,83 @@
         <div id="analytics-error" class="alert alert-danger d-none" role="alert"></div>
 
         <div class="row mb-4">
-            <div class="col-md-3 mb-3">
-                <div class="card p-3 text-center" style="background-color: #88d0e6; color: #ffffff; border: 1px solid #0d4a5f;">
+            <div class="col-md-3 mb-3 position-relative">
+                <div class="card p-3 text-center analytics-card-clickable" style="background-color: #88d0e6; color: #ffffff; border: 1px solid #0d4a5f; cursor: pointer;" onclick="toggleProjectList('total')">
                     <h3 id="total-projects" style="font-weight: bold; margin-bottom: 0.5rem;">0</h3>
                     <p style="margin-bottom: 0; font-weight: 500;">Total Projects</p>
                 </div>
+                <div id="total-projects-list" class="analytics-dropdown d-none">
+                    <div class="card shadow-lg">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <strong>Total Projects</strong>
+                            <button class="btn btn-sm btn-outline-dark" onclick="toggleProjectList('total', event)">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <div class="card-body" id="total-projects-list-content" style="max-height: 300px; overflow-y: auto;">
+                            <p class="text-muted mb-0">Loading...</p>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <div class="col-md-3 mb-3">
-                <div class="card p-3 text-center" style="background-color: #88d0e6; color: #ffffff; border: 1px solid #0d4a5f;">
+            <div class="col-md-3 mb-3 position-relative">
+                <div class="card p-3 text-center analytics-card-clickable" style="background-color: #88d0e6; color: #ffffff; border: 1px solid #0d4a5f; cursor: pointer;" onclick="toggleProjectList('active')">
                     <h3 id="projects-active" style="font-weight: bold; margin-bottom: 0.5rem;">0</h3>
                     <p style="margin-bottom: 0; font-weight: 500;">Active Projects</p>
                 </div>
-            </div>
-
-            <div class="col-md-3 mb-3">
-                <div class="card p-3 text-center" style="background-color: #88d0e6; color: #ffffff; border: 1px solid #0d4a5f;">
-                    <h3 id="projects-upcoming" style="font-weight: bold; margin-bottom: 0.5rem;">0</h3>
-                    <p style="margin-bottom: 0; font-weight: 500;">Upcoming Projects</p>
+                <div id="active-projects-list" class="analytics-dropdown d-none">
+                    <div class="card shadow-lg">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <strong>Active Projects</strong>
+                            <button class="btn btn-sm btn-outline-dark" onclick="toggleProjectList('active', event)">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <div class="card-body" id="active-projects-list-content" style="max-height: 300px; overflow-y: auto;">
+                            <p class="text-muted mb-0">Loading...</p>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div class="col-md-3 mb-3">
-                <div class="card p-3 text-center" style="background-color: #88d0e6; color: #ffffff; border: 1px solid #0d4a5f;">
+            <div class="col-md-3 mb-3 position-relative">
+                <div class="card p-3 text-center analytics-card-clickable" style="background-color: #88d0e6; color: #ffffff; border: 1px solid #0d4a5f; cursor: pointer;" onclick="toggleProjectList('upcoming')">
+                    <h3 id="projects-upcoming" style="font-weight: bold; margin-bottom: 0.5rem;">0</h3>
+                    <p style="margin-bottom: 0; font-weight: 500;">Upcoming Projects</p>
+                </div>
+                <div id="upcoming-projects-list" class="analytics-dropdown d-none">
+                    <div class="card shadow-lg">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <strong>Upcoming Projects</strong>
+                            <button class="btn btn-sm btn-outline-dark" onclick="toggleProjectList('upcoming', event)">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <div class="card-body" id="upcoming-projects-list-content" style="max-height: 300px; overflow-y: auto;">
+                            <p class="text-muted mb-0">Loading...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3 mb-3 position-relative">
+                <div class="card p-3 text-center analytics-card-clickable" style="background-color: #88d0e6; color: #ffffff; border: 1px solid #0d4a5f; cursor: pointer;" onclick="toggleProjectList('overdue')">
                     <h3 id="projects-overdue" style="font-weight: bold; margin-bottom: 0.5rem;">0</h3>
                     <p style="margin-bottom: 0; font-weight: 500;">Overdue Projects</p>
+                </div>
+                <div id="overdue-projects-list" class="analytics-dropdown d-none">
+                    <div class="card shadow-lg">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <strong>Overdue Projects</strong>
+                            <button class="btn btn-sm btn-outline-dark" onclick="toggleProjectList('overdue', event)">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <div class="card-body" id="overdue-projects-list-content" style="max-height: 300px; overflow-y: auto;">
+                            <p class="text-muted mb-0">Loading...</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -372,9 +475,9 @@
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                     <i class="fas fa-times me-1"></i> Close
                 </button>
-                <a id="view-full-details-btn" href="#" class="btn btn-primary" target="_blank">
+                <button type="button" id="view-full-details-btn" class="btn btn-primary" onclick="openFullDetailsFromModal()">
                     <i class="fas fa-external-link-alt me-1"></i> View Full Details
-                </a>
+                </button>
             </div>
         </div>
     </div>
@@ -711,6 +814,95 @@ function filterProjects() {
         const text = card.textContent || card.innerText;
         card.style.display = text.toLowerCase().indexOf(filter) > -1 ? '' : 'none';
     }
+    
+    // Re-apply sorting after filtering
+    sortProjects();
+}
+
+// Sort projects based on selected criteria
+function sortProjects() {
+    const sortSelect = document.getElementById('projectSortSelect');
+    const sortValue = sortSelect ? sortSelect.value : 'priority';
+    const container = document.getElementById('projects-cards-container');
+    
+    if (!container) return;
+    
+    // Get all visible project cards
+    const cards = Array.from(container.getElementsByClassName('project-card'));
+    const visibleCards = cards.filter(card => card.style.display !== 'none');
+    
+    // Sort the cards
+    visibleCards.sort((a, b) => {
+        let comparison = 0;
+        
+        switch(sortValue) {
+            case 'name-asc':
+                comparison = (a.dataset.name || '').localeCompare(b.dataset.name || '');
+                break;
+                
+            case 'name-desc':
+                comparison = (b.dataset.name || '').localeCompare(a.dataset.name || '');
+                break;
+                
+            case 'date-asc':
+                comparison = (parseInt(a.dataset.startDate) || 0) - (parseInt(b.dataset.startDate) || 0);
+                break;
+                
+            case 'date-desc':
+                comparison = (parseInt(b.dataset.startDate) || 0) - (parseInt(a.dataset.startDate) || 0);
+                break;
+                
+            case 'end-date-asc':
+                comparison = (parseInt(a.dataset.endDate) || 0) - (parseInt(b.dataset.endDate) || 0);
+                break;
+                
+            case 'end-date-desc':
+                comparison = (parseInt(b.dataset.endDate) || 0) - (parseInt(a.dataset.endDate) || 0);
+                break;
+                
+            case 'budget-asc':
+                comparison = (parseFloat(a.dataset.budget) || 0) - (parseFloat(b.dataset.budget) || 0);
+                break;
+                
+            case 'budget-desc':
+                comparison = (parseFloat(b.dataset.budget) || 0) - (parseFloat(a.dataset.budget) || 0);
+                break;
+                
+            case 'progress-asc':
+                comparison = (parseInt(a.dataset.progress) || 0) - (parseInt(b.dataset.progress) || 0);
+                break;
+                
+            case 'progress-desc':
+                comparison = (parseInt(b.dataset.progress) || 0) - (parseInt(a.dataset.progress) || 0);
+                break;
+                
+            case 'priority':
+            default:
+                // Sort by priority first, then by end date
+                const priorityA = parseInt(a.dataset.priority) || 2;
+                const priorityB = parseInt(b.dataset.priority) || 2;
+                if (priorityA !== priorityB) {
+                    comparison = priorityA - priorityB;
+                } else {
+                    // If same priority, sort by end date
+                    comparison = (parseInt(a.dataset.endDate) || 0) - (parseInt(b.dataset.endDate) || 0);
+                }
+                break;
+        }
+        
+        return comparison;
+    });
+    
+    // Re-append sorted cards to container
+    visibleCards.forEach(card => {
+        container.appendChild(card);
+    });
+    
+    // Also re-append hidden cards at the end
+    const hiddenCards = cards.filter(card => card.style.display === 'none');
+    hiddenCards.forEach(card => {
+        container.appendChild(card);
+    });
 }
 
 // Show project details modal
@@ -726,8 +918,8 @@ async function showProjectDetailsModal(projectId) {
         </div>
     `;
     
-    // Set the full details link
-    document.getElementById('view-full-details-btn').href = `project-details.php?project_id=${projectId}`;
+    // Store project ID for the full details button
+    document.getElementById('view-full-details-btn').setAttribute('data-project-id', projectId);
     
     modal.show();
     
@@ -852,6 +1044,12 @@ function escapeHtml(text) {
 
 let timelineChart = null;
 let budgetChart = null;
+let analyticsProjects = {
+    total: [],
+    active: [],
+    upcoming: [],
+    overdue: []
+};
 
 // Wait for DOM to be ready
 document.addEventListener('DOMContentLoaded', function() {
@@ -859,7 +1057,49 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize date pickers for project dates
     initializeProjectDatePickers();
+    
+    // Initialize sorting (applies default priority sort)
+    sortProjects();
+    
+    // Handle unhandled promise rejections (suppress browser extension errors)
+    window.addEventListener('unhandledrejection', function(event) {
+        // Check if it's a browser extension error
+        const errorMessage = event.reason?.message || event.reason?.toString() || '';
+        if (errorMessage.includes('message channel closed') || 
+            errorMessage.includes('asynchronous response')) {
+            // Suppress browser extension errors
+            event.preventDefault();
+            console.warn('Browser extension error suppressed:', errorMessage);
+            return;
+        }
+        // Log other errors for debugging
+        console.error('Unhandled promise rejection:', event.reason);
+    });
 });
+
+// Open full details in a new tab
+function openFullDetails(projectId) {
+    // Open in a new tab
+    const newWindow = window.open(`project-details.php?project_id=${projectId}`, '_blank');
+    // Store reference if needed
+    if (newWindow) {
+        sessionStorage.setItem('openedFromIndex', 'true');
+    }
+}
+
+// Open full details from modal
+function openFullDetailsFromModal() {
+    const projectId = document.getElementById('view-full-details-btn').getAttribute('data-project-id');
+    if (projectId) {
+        // Close the modal first
+        const modal = bootstrap.Modal.getInstance(document.getElementById('projectDetailsModal'));
+        if (modal) {
+            modal.hide();
+        }
+        // Open full details
+        openFullDetails(projectId);
+    }
+}
 
 // Initialize date pickers for project creation/editing
 function initializeProjectDatePickers() {
@@ -1008,6 +1248,12 @@ async function refreshProjectAnalytics() {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         
+        // Reset categorized projects
+        analyticsProjects.total = projects;
+        analyticsProjects.active = [];
+        analyticsProjects.upcoming = [];
+        analyticsProjects.overdue = [];
+        
         let total = projects.length;
         let active = 0;
         let upcoming = 0;
@@ -1031,13 +1277,16 @@ async function refreshProjectAnalytics() {
             
             if (startDate <= today && endDate >= today) {
                 active++;
+                analyticsProjects.active.push(project);
             } else if (startDate > today) {
                 upcoming++;
+                analyticsProjects.upcoming.push(project);
             } else if (endDate < today) {
                 // Check if project is completed (progress = 100) or has incomplete tasks
                 const progress = project.overall_progress || 0;
                 if (progress < 100) {
                     overdue++;
+                    analyticsProjects.overdue.push(project);
                 }
             }
         });
@@ -1058,6 +1307,9 @@ async function refreshProjectAnalytics() {
         // Create/update charts
         createTimelineChart(projects);
         createBudgetChart(projects);
+        
+        // Update project lists in dropdowns
+        updateProjectLists();
         
         console.log('Analytics loaded successfully');
         
@@ -1275,6 +1527,92 @@ function createBudgetChart(projects) {
                     }
                 }
             }
+        }
+    });
+}
+
+// Toggle project list dropdown
+function toggleProjectList(category, event) {
+    if (event) {
+        event.stopPropagation(); // Prevent card click when clicking X button
+    }
+    
+    const dropdownId = `${category}-projects-list`;
+    const dropdown = document.getElementById(dropdownId);
+    
+    if (!dropdown) return;
+    
+    // Toggle visibility
+    if (dropdown.classList.contains('d-none')) {
+        // Show dropdown
+        dropdown.classList.remove('d-none');
+        // Update content if needed
+        updateProjectListContent(category);
+    } else {
+        // Hide dropdown
+        dropdown.classList.add('d-none');
+    }
+}
+
+// Update project list content
+function updateProjectListContent(category) {
+    const contentId = `${category}-projects-list-content`;
+    const contentDiv = document.getElementById(contentId);
+    
+    if (!contentDiv) return;
+    
+    const projects = analyticsProjects[category] || [];
+    
+    if (projects.length === 0) {
+        contentDiv.innerHTML = '<p class="text-muted mb-0 text-center">No projects in this category.</p>';
+        return;
+    }
+    
+    let html = '<ul class="list-group list-group-flush">';
+    projects.forEach(project => {
+        const progress = project.overall_progress || 0;
+        const progressClass = progress === 100 ? 'bg-primary' : (progress > 0 ? 'bg-dark' : 'bg-secondary');
+        
+        html += `
+            <li class="list-group-item">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div class="flex-grow-1">
+                        <h6 class="mb-1">
+                            <a href="javascript:void(0)" onclick="showProjectDetailsModal(${project.project_id})" class="text-decoration-none">
+                                ${escapeHtml(project.name)}
+                            </a>
+                        </h6>
+                        <p class="mb-1 small text-muted">${escapeHtml(project.description || 'No description')}</p>
+                        <div class="d-flex gap-2 small">
+                            <span><i class="fas fa-calendar-alt me-1"></i>${project.start_date || 'Not set'}</span>
+                            <span><i class="fas fa-calendar-check me-1"></i>${project.end_date || 'Not set'}</span>
+                        </div>
+                        <div class="progress mt-2" style="height: 20px;">
+                            <div class="progress-bar ${progressClass}" style="width: ${progress}%">${progress}%</div>
+                        </div>
+                    </div>
+                    <div class="ms-2">
+                        <a href="project-details.php?project_id=${project.project_id}" 
+                           class="btn btn-sm btn-outline-primary" 
+                           onclick="openFullDetails(${project.project_id}); return false;">
+                            <i class="fas fa-external-link-alt"></i>
+                        </a>
+                    </div>
+                </div>
+            </li>
+        `;
+    });
+    html += '</ul>';
+    
+    contentDiv.innerHTML = html;
+}
+
+// Update all project lists
+function updateProjectLists() {
+    ['total', 'active', 'upcoming', 'overdue'].forEach(category => {
+        const dropdown = document.getElementById(`${category}-projects-list`);
+        if (dropdown && !dropdown.classList.contains('d-none')) {
+            updateProjectListContent(category);
         }
     });
 }

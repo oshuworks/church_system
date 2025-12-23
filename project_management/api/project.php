@@ -30,11 +30,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         // Fetch tasks with dependency information
         $stmt = $conn->prepare("
             SELECT t.*, 
-                   dt.name as dependency_task_name
+                   dt.name as dependency_task_name,
+                   CASE 
+                       WHEN t.progress_percent = 100 THEN 3
+                       WHEN t.end_date < CURDATE() AND t.progress_percent < 100 THEN 1
+                       ELSE 2
+                   END as sort_priority,
+                   CASE 
+                       WHEN t.progress_percent = 100 THEN 
+                           COALESCE(-TO_DAYS(t.end_date), 0)
+                       ELSE 
+                           COALESCE(TO_DAYS(t.end_date), 0)
+                   END as sort_date
             FROM tasks t
             LEFT JOIN tasks dt ON t.dependency_task_id = dt.task_id
             WHERE t.project_id = ?
-            ORDER BY t.start_date, t.name
+            ORDER BY 
+                sort_priority ASC,
+                sort_date ASC,
+                t.start_date ASC,
+                t.name ASC
         ");
         $stmt->bind_param("i", $project_id);
         $stmt->execute();

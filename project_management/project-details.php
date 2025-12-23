@@ -56,7 +56,7 @@
                 <button class="btn btn-primary" onclick="showEditProjectModal()">
                     <i class="fas fa-edit me-1"></i> Edit Project
                 </button>
-                <a href="index.php" class="btn btn-outline-dark">
+                <a href="index.php" class="btn btn-outline-dark" onclick="return handleBackToProjects(event)">
                     <i class="fas fa-arrow-left me-1"></i> Back to Projects
                 </a>
             </div>
@@ -207,6 +207,33 @@
                 </button>
                 <button type="button" class="btn btn-primary" onclick="saveTask()">
                     <i class="fas fa-save me-1"></i> Save Task
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- View Task Description Modal -->
+<div class="modal fade" id="viewTaskDescriptionModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-eye me-2"></i>Task Description: <span id="viewTaskDescriptionTitle"></span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Description:</label>
+                    <div class="p-3 bg-light border rounded" id="viewTaskDescriptionContent" style="min-height: 100px; white-space: pre-wrap; word-wrap: break-word;">
+                        Loading...
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-dark" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i> Close
                 </button>
             </div>
         </div>
@@ -494,6 +521,11 @@ function renderWBS() {
     // Separate parent tasks and subtasks
     const parentTasks = currentTasks.filter(task => !task.parent_task_id);
     const subtasksMap = new Map();
+    
+    // Sort subtasks: urgent/unfinished at top, completed at bottom (by date)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
     currentTasks.forEach(task => {
         if (task.parent_task_id) {
             if (!subtasksMap.has(task.parent_task_id)) {
@@ -501,6 +533,45 @@ function renderWBS() {
             }
             subtasksMap.get(task.parent_task_id).push(task);
         }
+    });
+    
+    // Sort subtasks within each parent
+    subtasksMap.forEach((subtasks, parentId) => {
+        subtasks.sort((a, b) => {
+            const aCompleted = a.progress_percent === 100;
+            const bCompleted = b.progress_percent === 100;
+            const aEndDate = a.end_date ? new Date(a.end_date) : null;
+            const bEndDate = b.end_date ? new Date(b.end_date) : null;
+            const aOverdue = aEndDate && aEndDate < today && !aCompleted;
+            const bOverdue = bEndDate && bEndDate < today && !bCompleted;
+            
+            // Priority: 1 = urgent/overdue, 2 = active/unfinished, 3 = completed
+            const aPriority = aCompleted ? 3 : (aOverdue ? 1 : 2);
+            const bPriority = bCompleted ? 3 : (bOverdue ? 1 : 2);
+            
+            // First sort by priority
+            if (aPriority !== bPriority) {
+                return aPriority - bPriority;
+            }
+            
+            // If both completed, sort by end_date DESC (most recent first)
+            if (aCompleted && bCompleted) {
+                if (aEndDate && bEndDate) {
+                    return bEndDate - aEndDate;
+                }
+                return aEndDate ? -1 : (bEndDate ? 1 : 0);
+            }
+            
+            // If both urgent or both active, sort by end_date ASC (earliest first)
+            if (aEndDate && bEndDate) {
+                return aEndDate - bEndDate;
+            }
+            
+            // Fallback to start_date
+            const aStartDate = a.start_date ? new Date(a.start_date) : new Date(0);
+            const bStartDate = b.start_date ? new Date(b.start_date) : new Date(0);
+            return aStartDate - bStartDate;
+        });
     });
     
     // Render tasks as cards
@@ -519,7 +590,7 @@ function renderWBS() {
             <div class="card h-100 shadow-sm border-secondary">
                 <div class="card-header bg-white border-bottom">
                     <div class="d-flex justify-content-between align-items-start">
-                        <h5 class="card-title mb-0">
+                        <h5 class="card-title mb-0 flex-grow-1" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0;" title="${escapeHtml(task.name)}">
                             <i class="fas fa-tasks me-2" style="color: #1a6985;"></i>
                             ${escapeHtml(task.name)}
                         </h5>
@@ -542,38 +613,40 @@ function renderWBS() {
                     </div>
                 </div>
                 <div class="card-body">
-                    <p class="card-text text-muted small mb-3">
-                        ${escapeHtml(task.description || 'No description')}
-                    </p>
+                    <div class="task-description-container mb-3">
+                        <p class="card-text text-muted small mb-2 task-description-text" style="display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; line-height: 1.4; min-height: 2.8em;">
+                            ${escapeHtml(task.description || 'No description')}
+                        </p>
+                        <button class="btn btn-sm btn-outline-primary w-100" onclick="showTaskDescriptionModal(${task.task_id}, ${JSON.stringify(task.name)}, ${JSON.stringify(task.description || 'No description')})">
+                            <i class="fas fa-eye me-1"></i> View Full Description
+                        </button>
+                    </div>
                     
-                    <div class="mb-3">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <small class="text-muted"><i class="fas fa-calendar-alt me-1"></i>Start:</small>
-                            <small class="fw-semibold">${task.start_date ? new Date(task.start_date).toLocaleDateString() : 'Not set'}</small>
+                    <div class="mb-3 task-info-section">
+                        <div class="d-flex justify-content-between align-items-center mb-2 task-info-row">
+                            <small class="text-muted task-info-label"><i class="fas fa-calendar-alt me-1"></i>Start:</small>
+                            <small class="fw-semibold task-info-value">${task.start_date ? new Date(task.start_date).toLocaleDateString() : 'Not set'}</small>
                         </div>
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <small class="text-muted"><i class="fas fa-calendar-check me-1"></i>End:</small>
-                            <small class="fw-semibold">${task.end_date ? new Date(task.end_date).toLocaleDateString() : 'Not set'}</small>
+                        <div class="d-flex justify-content-between align-items-center mb-2 task-info-row">
+                            <small class="text-muted task-info-label"><i class="fas fa-calendar-check me-1"></i>End:</small>
+                            <small class="fw-semibold task-info-value">${task.end_date ? new Date(task.end_date).toLocaleDateString() : 'Not set'}</small>
                         </div>
-                        ${dependencyTask ? `
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <small class="text-muted"><i class="fas fa-link me-1"></i>Depends on:</small>
-                            <span class="badge bg-primary">${escapeHtml(dependencyTask.name)}</span>
+                        <div class="d-flex justify-content-between align-items-center mb-2 task-info-row">
+                            <small class="text-muted task-info-label"><i class="fas fa-link me-1"></i>Depends on:</small>
+                            <span class="badge ${dependencyTask ? 'bg-primary' : 'bg-secondary'} task-info-value">${dependencyTask ? escapeHtml(dependencyTask.name) : 'None'}</span>
                         </div>
-                        ` : ''}
                         ${hasSubtasks ? `
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <small class="text-muted"><i class="fas fa-list-ul me-1"></i>Subtasks:</small>
-                            <span class="badge bg-info">${subtasks.length}</span>
+                        <div class="d-flex justify-content-between align-items-center mb-2 task-info-row">
+                            <small class="text-muted task-info-label"><i class="fas fa-list-ul me-1"></i>Subtasks:</small>
+                            <span class="badge bg-info task-info-value">${subtasks.length}</span>
                         </div>
                         ` : ''}
                     </div>
                     
-                    <div class="mb-3">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <small class="text-muted fw-semibold">Progress:</small>
-                            <span class="badge ${progressClass} text-white">${task.progress_percent}%</span>
-                            ${hasSubtasks ? '<small class="text-muted"><i class="fas fa-info-circle" title="Progress calculated from subtasks"></i></small>' : ''}
+                    <div class="mb-3 task-progress-section">
+                        <div class="d-flex justify-content-between align-items-center mb-2 task-info-row">
+                            <small class="text-muted fw-semibold task-info-label">Progress:</small>
+                            <span class="badge ${progressClass} text-white task-info-value">${task.progress_percent}%</span>
                         </div>
                         <div class="progress mb-2" style="height: 25px;">
                             <div class="progress-bar ${progressClass}" style="width: ${task.progress_percent}%">
@@ -623,8 +696,10 @@ function renderWBS() {
                             return `
                             <div class="subtask-card border rounded p-2 mb-2" style="background-color: #f8f9fa;">
                                 <div class="d-flex justify-content-between align-items-start mb-2">
-                                    <div class="flex-grow-1">
-                                        <strong><i class="fas fa-circle-notch me-1" style="font-size: 0.6em;"></i>${escapeHtml(subtask.name)}</strong>
+                                    <div class="flex-grow-1" style="min-width: 0;">
+                                        <strong style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block;" title="${escapeHtml(subtask.name)}">
+                                            <i class="fas fa-circle-notch me-1" style="font-size: 0.6em;"></i>${escapeHtml(subtask.name)}
+                                        </strong>
                                         <div class="progress mt-2" style="height: 20px;">
                                             <div class="progress-bar ${subtaskProgressClass}" style="width: ${subtask.progress_percent}%">
                                                 ${subtask.progress_percent}%
@@ -1132,11 +1207,44 @@ function renderTimeline() {
         return;
     }
     
-    // Sort tasks by start date
+    // Sort tasks: urgent/unfinished at top, completed at bottom (by date)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
     const sortedTasks = [...currentTasks].sort((a, b) => {
-        const dateA = a.start_date ? new Date(a.start_date) : new Date(0);
-        const dateB = b.start_date ? new Date(b.start_date) : new Date(0);
-        return dateA - dateB;
+        const aCompleted = a.progress_percent === 100;
+        const bCompleted = b.progress_percent === 100;
+        const aEndDate = a.end_date ? new Date(a.end_date) : null;
+        const bEndDate = b.end_date ? new Date(b.end_date) : null;
+        const aOverdue = aEndDate && aEndDate < today && !aCompleted;
+        const bOverdue = bEndDate && bEndDate < today && !bCompleted;
+        
+        // Priority: 1 = urgent/overdue, 2 = active/unfinished, 3 = completed
+        const aPriority = aCompleted ? 3 : (aOverdue ? 1 : 2);
+        const bPriority = bCompleted ? 3 : (bOverdue ? 1 : 2);
+        
+        // First sort by priority
+        if (aPriority !== bPriority) {
+            return aPriority - bPriority;
+        }
+        
+        // If both completed, sort by end_date DESC (most recent first)
+        if (aCompleted && bCompleted) {
+            if (aEndDate && bEndDate) {
+                return bEndDate - aEndDate;
+            }
+            return aEndDate ? -1 : (bEndDate ? 1 : 0);
+        }
+        
+        // If both urgent or both active, sort by end_date ASC (earliest first)
+        if (aEndDate && bEndDate) {
+            return aEndDate - bEndDate;
+        }
+        
+        // Fallback to start_date
+        const aStartDate = a.start_date ? new Date(a.start_date) : new Date(0);
+        const bStartDate = b.start_date ? new Date(b.start_date) : new Date(0);
+        return aStartDate - bStartDate;
     });
     
     let html = '<div class="timeline">';
@@ -1186,6 +1294,49 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+// Handle back to projects button click
+function handleBackToProjects(event) {
+    event.preventDefault();
+    
+    // Check if we came from index.php (opened in new tab)
+    const openedFromIndex = sessionStorage.getItem('openedFromIndex');
+    
+    if (openedFromIndex === 'true') {
+        // Clear the flag
+        sessionStorage.removeItem('openedFromIndex');
+        // Try to close the window/tab (works if opened with window.open())
+        try {
+            window.close();
+            // If window.close() doesn't work (browser blocked it), navigate back after a short delay
+            setTimeout(() => {
+                // Check if window is still open (close was blocked)
+                if (window && !window.closed) {
+                    window.location.href = 'index.php';
+                }
+            }, 100);
+        } catch (e) {
+            // If we can't close, just navigate
+            window.location.href = 'index.php';
+        }
+    } else {
+        // Normal navigation if not opened from index
+        window.location.href = 'index.php';
+    }
+    
+    return false; // Prevent default navigation
+}
+
+// Show task description modal
+function showTaskDescriptionModal(taskId, taskName, taskDescription) {
+    document.getElementById('viewTaskDescriptionTitle').textContent = taskName;
+    const descriptionContent = document.getElementById('viewTaskDescriptionContent');
+    // taskDescription is already properly escaped from JSON.stringify
+    descriptionContent.textContent = taskDescription || 'No description available.';
+    
+    const modal = new bootstrap.Modal(document.getElementById('viewTaskDescriptionModal'));
+    modal.show();
 }
 </script>
 
