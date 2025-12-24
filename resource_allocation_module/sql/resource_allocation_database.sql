@@ -177,8 +177,7 @@ CREATE TABLE budget_expenses (
 
 
 
-
--- Insert Budget Categories relevant to Church Youth Ministry
+-- Insert Budget Categories
 INSERT INTO budget_categories (category_name, description, parent_category_id) VALUES
 ('Ministry Programs', 'Core youth ministry programs and activities', NULL),
 ('Events', 'Special events and gatherings', NULL),
@@ -202,200 +201,208 @@ INSERT INTO budget_categories (category_name, description, parent_category_id) V
 ('Transportation', 'Vehicle and transportation costs', 5),
 ('Communication', 'Phone, internet, and communication costs', 5);
 
--- Insert Projects for KKB Ministry
+-- Insert Projects
 INSERT INTO projects (project_name, project_description, start_date, end_date, status, priority, budget_allocated) VALUES
-('KKB Summer Camp 2024', 'Annual youth summer camp with spiritual growth activities', '2024-04-01', '2024-05-31', 'planning', 'high', 150000.00),
-('Sunday School Renovation', 'Renovation of Sunday school classrooms and facilities', '2024-02-01', '2024-03-31', 'active', 'medium', 75000.00),
-('Youth Leadership Training', 'Quarterly leadership training for KKB officers', '2024-01-15', '2024-12-15', 'active', 'high', 50000.00),
-('Community Feeding Program', 'Weekly community feeding program for underprivileged families', '2024-01-01', '2024-12-31', 'active', 'high', 200000.00),
-('Christmas Outreach Concert', 'Christmas concert outreach to the community', '2024-10-01', '2024-12-25', 'planning', 'medium', 100000.00),
-('Bible Study Materials', 'Production and distribution of Bible study materials', '2024-01-01', '2024-06-30', 'active', 'medium', 30000.00),
-('Youth Fellowship Events', 'Regular monthly youth fellowship activities', '2024-01-01', '2024-12-31', 'active', 'medium', 80000.00),
-('Mission Trip Preparation', 'Preparation for local mission trips', '2024-03-01', '2024-08-31', 'planning', 'low', 40000.00);
+('Summer Camp 2024', 'Annual youth summer camp with spiritual growth activities', '2024-04-01', '2024-05-31', 'active', 'high', 150000.00),
+('Leadership Training Program', 'Quarterly leadership training for youth leaders', '2024-01-15', '2024-12-15', 'active', 'high', 50000.00),
+('Community Feeding Program', 'Weekly community feeding program', '2024-01-01', '2024-12-31', 'active', 'high', 200000.00),
+('Christmas Concert', 'Christmas outreach concert event', '2024-10-01', '2024-12-25', 'planning', 'medium', 100000.00),
+('Bible Study Series', 'Monthly Bible study sessions', '2024-01-01', '2024-12-31', 'active', 'medium', 30000.00),
+('Youth Fellowship Events', 'Regular monthly fellowship activities', '2024-01-01', '2024-12-31', 'active', 'medium', 80000.00);
 
--- Insert Tasks for each Project
+-- Insert Tasks
 INSERT INTO tasks (project_id, task_name, task_description, start_date, end_date, estimated_hours, actual_hours, status, priority, progress_percentage) VALUES
--- Summer Camp 2024 Tasks
-(1, 'Camp Site Booking', 'Reserve and pay for camp venue', '2024-04-01', '2024-04-15', 20, 15, 'completed', 'high', 75.00),
-(1, 'Speaker Coordination', 'Coordinate with guest speakers and pastors', '2024-04-10', '2024-04-30', 30, 10, 'in_progress', 'high', 33.33),
-(1, 'Food Catering', 'Arrange meals for camp participants', '2024-04-20', '2024-05-10', 40, 0, 'not_started', 'medium', 0.00),
-(1, 'Transportation Logistics', 'Arrange transportation to and from camp', '2024-05-01', '2024-05-20', 25, 0, 'not_started', 'medium', 0.00),
-(1, 'Registration Management', 'Handle participant registration and payments', '2024-04-01', '2024-05-25', 50, 20, 'in_progress', 'high', 40.00),
-
--- Sunday School Renovation Tasks
-(2, 'Classroom Design', 'Design new classroom layout and decorations', '2024-02-01', '2024-02-15', 30, 30, 'completed', 'medium', 100.00),
-(2, 'Painting and Decorating', 'Paint walls and install educational decorations', '2024-02-10', '2024-03-10', 80, 60, 'in_progress', 'medium', 75.00),
-(2, 'Furniture Installation', 'Install new tables, chairs, and storage', '2024-02-20', '2024-03-20', 40, 10, 'in_progress', 'medium', 25.00),
-(2, 'Audio-Visual Setup', 'Install projector, screen, and sound system', '2024-03-01', '2024-03-25', 25, 0, 'not_started', 'low', 0.00),
+-- Summer Camp Tasks
+(1, 'Camp Site Booking', 'Reserve and pay for camp venue', '2024-04-01', '2024-04-15', 20, 20, 'completed', 'high', 100.00),
+(1, 'Speaker Coordination', 'Coordinate with guest speakers', '2024-04-10', '2024-04-30', 30, 25, 'in_progress', 'high', 83.33),
+(1, 'Food Catering', 'Arrange meals for camp participants', '2024-04-20', '2024-05-10', 40, 30, 'in_progress', 'medium', 75.00),
+(1, 'Transportation Logistics', 'Arrange transportation', '2024-05-01', '2024-05-20', 25, 10, 'in_progress', 'medium', 40.00),
 
 -- Leadership Training Tasks
-(3, 'Curriculum Development', 'Develop leadership training curriculum', '2024-01-15', '2024-02-15', 60, 60, 'completed', 'high', 100.00),
-(3, 'Trainer Recruitment', 'Recruit and coordinate volunteer trainers', '2024-02-01', '2024-02-28', 20, 15, 'completed', 'medium', 75.00),
-(3, 'Training Materials', 'Prepare training manuals and resources', '2024-02-15', '2024-03-15', 40, 30, 'in_progress', 'medium', 75.00),
-(3, 'Venue Setup', 'Prepare training venue and equipment', '2024-03-01', '2024-03-31', 15, 0, 'not_started', 'low', 0.00),
+(2, 'Curriculum Development', 'Develop training curriculum', '2024-01-15', '2024-02-15', 60, 60, 'completed', 'high', 100.00),
+(2, 'Trainer Recruitment', 'Recruit volunteer trainers', '2024-02-01', '2024-02-28', 20, 20, 'completed', 'medium', 100.00),
+(2, 'Training Materials', 'Prepare training manuals', '2024-02-15', '2024-03-15', 40, 35, 'in_progress', 'medium', 87.50),
 
--- Community Feeding Program Tasks
-(4, 'Beneficiary Identification', 'Identify families needing assistance', '2024-01-01', '2024-01-31', 30, 30, 'completed', 'high', 100.00),
-(4, 'Food Procurement', 'Purchase food supplies and ingredients', '2024-01-15', '2024-12-15', 100, 25, 'in_progress', 'high', 25.00),
-(4, 'Volunteer Coordination', 'Schedule and coordinate volunteers', '2024-01-01', '2024-12-31', 80, 20, 'in_progress', 'medium', 25.00),
-(4, 'Distribution Logistics', 'Manage weekly food distribution', '2024-01-01', '2024-12-31', 150, 40, 'in_progress', 'high', 26.67),
+-- Community Feeding Tasks
+(3, 'Beneficiary Identification', 'Identify families needing assistance', '2024-01-01', '2024-01-31', 30, 30, 'completed', 'high', 100.00),
+(3, 'Food Procurement', 'Purchase food supplies', '2024-01-15', '2024-12-15', 100, 80, 'in_progress', 'high', 80.00),
+(3, 'Volunteer Coordination', 'Schedule and coordinate volunteers', '2024-01-01', '2024-12-31', 80, 60, 'in_progress', 'medium', 75.00),
 
--- Christmas Outreach Concert Tasks
-(5, 'Venue Booking', 'Reserve concert venue and facilities', '2024-10-01', '2024-10-15', 25, 20, 'completed', 'high', 80.00),
-(5, 'Artist Coordination', 'Coordinate with performers and musicians', '2024-10-10', '2024-11-30', 40, 15, 'in_progress', 'high', 37.50),
-(5, 'Marketing and Promotion', 'Promote concert to community', '2024-10-15', '2024-12-20', 60, 20, 'in_progress', 'medium', 33.33),
-(5, 'Ticket Sales Management', 'Handle ticket distribution and sales', '2024-11-01', '2024-12-25', 35, 10, 'in_progress', 'medium', 28.57),
-(5, 'Event Setup', 'Setup venue decorations and equipment', '2024-12-20', '2024-12-24', 30, 0, 'not_started', 'high', 0.00),
+-- Christmas Concert Tasks
+(4, 'Venue Booking', 'Reserve concert venue', '2024-10-01', '2024-10-15', 25, 15, 'in_progress', 'high', 60.00),
+(4, 'Artist Coordination', 'Coordinate with performers', '2024-10-10', '2024-11-30', 40, 20, 'in_progress', 'high', 50.00),
 
--- Bible Study Materials Tasks
-(6, 'Content Development', 'Write and edit Bible study materials', '2024-01-01', '2024-03-31', 80, 60, 'completed', 'high', 75.00),
-(6, 'Graphic Design', 'Design layouts and cover art', '2024-02-01', '2024-04-30', 40, 25, 'in_progress', 'medium', 62.50),
-(6, 'Printing Production', 'Print and bind study materials', '2024-04-01', '2024-05-15', 30, 10, 'in_progress', 'medium', 33.33),
-(6, 'Distribution Planning', 'Plan distribution to church members', '2024-05-01', '2024-06-30', 25, 0, 'not_started', 'low', 0.00),
+-- Bible Study Tasks
+(5, 'Content Development', 'Write Bible study materials', '2024-01-01', '2024-03-31', 80, 70, 'in_progress', 'high', 87.50),
+(5, 'Session Planning', 'Plan monthly study sessions', '2024-02-01', '2024-12-31', 40, 30, 'in_progress', 'medium', 75.00),
 
--- Youth Fellowship Events Tasks
-(7, 'Event Calendar Planning', 'Plan monthly fellowship activities', '2024-01-01', '2024-01-31', 20, 20, 'completed', 'high', 100.00),
-(7, 'Budget Management', 'Manage monthly event budgets', '2024-01-01', '2024-12-31', 40, 25, 'in_progress', 'medium', 62.50),
-(7, 'Activity Coordination', 'Coordinate monthly youth activities', '2024-02-01', '2024-12-31', 80, 30, 'in_progress', 'high', 37.50),
-(7, 'Venue Management', 'Book and manage event venues', '2024-01-15', '2024-12-15', 50, 20, 'in_progress', 'medium', 40.00),
-(7, 'Youth Engagement', 'Maintain youth participation and feedback', '2024-01-01', '2024-12-31', 60, 25, 'in_progress', 'high', 41.67),
+-- Youth Fellowship Tasks
+(6, 'Event Calendar Planning', 'Plan monthly activities', '2024-01-01', '2024-01-31', 20, 20, 'completed', 'high', 100.00),
+(6, 'Activity Coordination', 'Coordinate youth activities', '2024-02-01', '2024-12-31', 80, 50, 'in_progress', 'high', 62.50);
 
--- Mission Trip Preparation Tasks
-(8, 'Destination Research', 'Research and select mission locations', '2024-03-01', '2024-04-30', 30, 25, 'completed', 'high', 83.33),
-(8, 'Team Recruitment', 'Recruit volunteers for mission trips', '2024-04-01', '2024-06-30', 40, 20, 'in_progress', 'medium', 50.00),
-(8, 'Fundraising Campaign', 'Organize fundraising for trip expenses', '2024-04-15', '2024-08-15', 60, 15, 'in_progress', 'high', 25.00),
-(8, 'Logistics Planning', 'Plan transportation and accommodation', '2024-05-01', '2024-07-31', 35, 10, 'in_progress', 'medium', 28.57),
-(8, 'Training Preparation', 'Prepare team for mission work', '2024-06-01', '2024-08-31', 25, 0, 'not_started', 'low', 0.00);
-
--- Insert Employees (Church Staff and Volunteers)
+-- Insert Employees with different utilization states
 INSERT INTO employees (employee_name, email, role, department, skills, hourly_rate, max_work_hours_per_day, current_workload, utilization_percentage, status) VALUES
-('Rev. Jose Santos', 'jose.santos@jilchurch.org', 'Senior Pastor', 'Pastoral', 'Leadership, Preaching, Counseling', 500.00, 8.00, 6.00, 75.00, 'active'),
-('Sister Maria Reyes', 'maria.reyes@jilchurch.org', 'Youth Ministry Head', 'Youth Ministry', 'Youth Counseling, Event Planning, Teaching', 350.00, 8.00, 7.00, 87.50, 'active'),
-('Brother Carlos Mendez', 'carlos.mendez@jilchurch.org', 'Music Ministry Leader', 'Music', 'Musical Direction, Guitar, Piano, Vocals', 300.00, 6.00, 4.00, 66.67, 'active'),
-('Sister Ana Rodriguez', 'ana.rodriguez@jilchurch.org', 'Sunday School Superintendent', 'Education', 'Teaching, Curriculum Development, Child Care', 250.00, 8.00, 5.00, 62.50, 'active'),
-('Brother David Chen', 'david.chen@jilchurch.org', 'Treasurer', 'Administration', 'Accounting, Budget Management, Financial Reporting', 400.00, 8.00, 6.00, 75.00, 'active'),
-('Sister Grace Lee', 'grace.lee@jilchurch.org', 'Volunteer Coordinator', 'Operations', 'Volunteer Management, Logistics, Communication', 200.00, 6.00, 3.00, 50.00, 'active'),
-('Brother Michael Torres', 'michael.torres@jilchurch.org', 'Facilities Manager', 'Operations', 'Maintenance, Repairs, Security', 280.00, 8.00, 4.00, 50.00, 'active'),
-('Sister Sarah Gomez', 'sarah.gomez@jilchurch.org', 'Outreach Coordinator', 'Outreach', 'Community Relations, Evangelism, Social Services', 220.00, 8.00, 5.00, 62.50, 'active'),
-('Brother James Park', 'james.park@jilchurch.org', 'IT Support', 'Administration', 'Computer Support, Audio-Visual, Social Media', 320.00, 8.00, 2.00, 25.00, 'active'),
-('Sister Rachel Kim', 'rachel.kim@jilchurch.org', 'Administrative Assistant', 'Administration', 'Office Management, Documentation, Scheduling', 180.00, 8.00, 6.00, 75.00, 'active');
+-- UNDERUTILIZED employees (less than 60% utilization)
+('John Smith', 'john.smith@church.org', 'IT Support', 'Administration', 'Computer Support, Audio-Visual', 320.00, 8.00, 2.00, 25.00, 'active'),
+('Mary Johnson', 'mary.johnson@church.org', 'Administrative Assistant', 'Administration', 'Office Management, Documentation', 180.00, 8.00, 3.00, 38.00, 'active'),
+('Robert Davis', 'robert.davis@church.org', 'Facilities Assistant', 'Operations', 'Maintenance, Repairs', 220.00, 8.00, 4.00, 50.00, 'active'),
 
--- Insert Equipment (Church Resources)
+-- OPTIMAL utilization employees (60-85% utilization)
+('Rev. Jose Santos', 'jose.santos@church.org', 'Senior Pastor', 'Pastoral', 'Leadership, Preaching, Counseling', 500.00, 8.00, 5.00, 63.00, 'active'),
+('Sister Maria Reyes', 'maria.reyes@church.org', 'Youth Ministry Head', 'Youth Ministry', 'Youth Counseling, Event Planning', 350.00, 8.00, 6.00, 75.00, 'active'),
+('Brother Carlos Mendez', 'carlos.mendez@church.org', 'Music Ministry Leader', 'Music', 'Musical Direction, Guitar, Piano', 300.00, 6.00, 5.00, 83.00, 'active'),
+('Sister Ana Rodriguez', 'ana.rodriguez@church.org', 'Sunday School Superintendent', 'Education', 'Teaching, Curriculum Development', 250.00, 8.00, 7.00, 88.00, 'active'),
+
+-- OVERLOADED employees (86-100% utilization)
+('Brother David Chen', 'david.chen@church.org', 'Treasurer', 'Administration', 'Accounting, Budget Management', 400.00, 8.00, 8.00, 100.00, 'active'),
+('Sister Grace Lee', 'grace.lee@church.org', 'Volunteer Coordinator', 'Operations', 'Volunteer Management, Logistics', 200.00, 6.00, 6.00, 100.00, 'active'),
+('Sister Sarah Gomez', 'sarah.gomez@church.org', 'Outreach Coordinator', 'Outreach', 'Community Relations, Evangelism', 220.00, 8.00, 8.00, 100.00, 'active'),
+
+-- CRITICAL utilization employees (over 100% - overallocated)
+('Michael Torres', 'michael.torres@church.org', 'Facilities Manager', 'Operations', 'Maintenance, Repairs, Security', 280.00, 8.00, 9.00, 113.00, 'active'),
+('James Park', 'james.park@church.org', 'IT Support Specialist', 'Administration', 'Computer Support, Audio-Visual, Social Media', 320.00, 8.00, 10.00, 125.00, 'active'),
+('Rachel Kim', 'rachel.kim@church.org', 'Administrative Assistant', 'Administration', 'Office Management, Scheduling', 180.00, 8.00, 9.00, 113.00, 'active');
+
+-- Insert Equipment with different utilization states
 INSERT INTO equipment (equipment_name, equipment_type, description, hourly_rate, maintenance_cost, total_capacity_hours, used_hours, utilization_percentage, status, location) VALUES
-('Church Bus', 'Transportation', '40-seater bus for transportation', 150.00, 5000.00, 200.00, 50.00, 25.00, 'available', 'Church Garage'),
-('Projector System', 'AV Equipment', 'HD projector with sound system', 50.00, 1000.00, 160.00, 40.00, 25.00, 'available', 'Main Hall'),
-('Sound System', 'AV Equipment', 'Professional audio system for events', 75.00, 2000.00, 200.00, 80.00, 40.00, 'available', 'Main Hall'),
-('Kitchen Equipment', 'Food Service', 'Commercial kitchen for food preparation', 100.00, 3000.00, 300.00, 120.00, 40.00, 'available', 'Church Kitchen'),
-('Tents and Tables', 'Event Equipment', 'Outdoor event setup equipment', 25.00, 500.00, 100.00, 20.00, 20.00, 'available', 'Storage Room'),
-('Musical Instruments', 'Music Equipment', 'Guitars, keyboards, drums for worship', 30.00, 1500.00, 150.00, 60.00, 40.00, 'available', 'Music Room'),
-('Photography Equipment', 'Media Equipment', 'Cameras and accessories for documentation', 40.00, 800.00, 80.00, 15.00, 18.75, 'available', 'Media Room'),
-('Computers', 'Office Equipment', 'Desktop computers for administrative work', 20.00, 600.00, 400.00, 100.00, 25.00, 'available', 'Office'),
-('Generator', 'Power Equipment', 'Backup generator for events', 35.00, 1200.00, 100.00, 10.00, 10.00, 'available', 'Maintenance Room'),
-('Printing Press', 'Office Equipment', 'Digital printer for materials production', 15.00, 400.00, 200.00, 30.00, 15.00, 'available', 'Office');
+-- UNDERUTILIZED equipment (less than 60% utilization)
+('Church Bus', 'Transportation', '40-seater bus for transportation', 150.00, 5000.00, 200.00, 20.00, 10.00, 'available', 'Church Garage'),
+('Photography Equipment', 'Media Equipment', 'Cameras and accessories', 40.00, 800.00, 80.00, 15.00, 19.00, 'available', 'Media Room'),
+('Generator', 'Power Equipment', 'Backup generator for events', 35.00, 1200.00, 100.00, 25.00, 25.00, 'available', 'Maintenance Room'),
+('Printing Press', 'Office Equipment', 'Digital printer for materials', 15.00, 400.00, 200.00, 50.00, 25.00, 'available', 'Office'),
+('Tents and Tables', 'Event Equipment', 'Outdoor event setup equipment', 25.00, 500.00, 100.00, 30.00, 30.00, 'available', 'Storage Room'),
+
+-- OPTIMAL utilization equipment (60-85% utilization)
+('Projector System', 'AV Equipment', 'HD projector with sound system', 50.00, 1000.00, 160.00, 100.00, 63.00, 'available', 'Main Hall'),
+('Sound System', 'AV Equipment', 'Professional audio system', 75.00, 2000.00, 200.00, 140.00, 70.00, 'available', 'Main Hall'),
+('Musical Instruments', 'Music Equipment', 'Guitars, keyboards, drums', 30.00, 1500.00, 150.00, 110.00, 73.00, 'available', 'Music Room'),
+('Computers', 'Office Equipment', 'Desktop computers for admin work', 20.00, 600.00, 400.00, 300.00, 75.00, 'available', 'Office'),
+
+-- OVERLOADED equipment (86-100% utilization)
+('Kitchen Equipment', 'Food Service', 'Commercial kitchen for food preparation', 100.00, 3000.00, 300.00, 280.00, 93.00, 'in_use', 'Church Kitchen'),
+
+-- CRITICAL utilization equipment (over 100% - overused)
+('Additional Sound System', 'AV Equipment', 'Secondary sound system for multiple events', 75.00, 2000.00, 200.00, 220.00, 110.00, 'in_use', 'Fellowship Hall');
 
 -- Insert Project Budgets
 INSERT INTO project_budgets (project_id, category_id, allocated_amount, spent_amount, fiscal_year, status) VALUES
-(1, 2, 150000.00, 25000.00, '2024', 'active'),  -- Summer Camp - Events
-(2, 5, 75000.00, 35000.00, '2024', 'active'),   -- Sunday School Renovation - Operations
-(3, 4, 50000.00, 15000.00, '2024', 'active'),   -- Leadership Training - Training
-(4, 3, 200000.00, 45000.00, '2024', 'active'),  -- Feeding Program - Outreach
-(5, 2, 100000.00, 0.00, '2024', 'active'),     -- Christmas Concert - Events
-(6, 1, 30000.00, 8000.00, '2024', 'active'),    -- Bible Study Materials - Ministry Programs
-(7, 1, 80000.00, 20000.00, '2024', 'active'),   -- Youth Fellowship - Ministry Programs
-(8, 3, 40000.00, 5000.00, '2024', 'active');   -- Mission Trip - Outreach
+(1, 2, 150000.00, 75000.00, '2024', 'active'),  -- Summer Camp - Events
+(2, 4, 50000.00, 35000.00, '2024', 'active'),   -- Leadership Training - Training
+(3, 3, 200000.00, 120000.00, '2024', 'active'), -- Feeding Program - Outreach
+(4, 2, 100000.00, 20000.00, '2024', 'active'),  -- Christmas Concert - Events
+(5, 1, 30000.00, 15000.00, '2024', 'active'),   -- Bible Study - Ministry Programs
+(6, 1, 80000.00, 40000.00, '2024', 'active');   -- Youth Fellowship - Ministry Programs
 
 -- Insert Task Assignments
 INSERT INTO task_assignments (task_id, project_id, assignment_type, resource_id, allocation_percentage, allocated_hours, actual_hours_used, start_date, end_date, status, notes) VALUES
 -- Summer Camp Assignments
-(1, 1, 'employee', 2, 100.00, 20.00, 15.00, '2024-04-01', '2024-04-15', 'completed', 'Successfully booked camp site'),
-(2, 1, 'employee', 1, 50.00, 15.00, 5.00, '2024-04-10', '2024-04-30', 'in_progress', 'Coordinating with guest speakers'),
-(2, 1, 'employee', 3, 50.00, 15.00, 5.00, '2024-04-10', '2024-04-30', 'in_progress', 'Music and worship coordination'),
-(3, 1, 'employee', 8, 100.00, 40.00, 0.00, '2024-04-20', '2024-05-10', 'not_started', 'Food planning and coordination'),
-(4, 1, 'equipment', 1, 100.00, 25.00, 0.00, '2024-05-01', '2024-05-20', 'not_started', 'Bus for transportation'),
-(5, 1, 'employee', 6, 100.00, 50.00, 20.00, '2024-04-01', '2024-05-25', 'in_progress', 'Managing registrations'),
-
--- Sunday School Renovation Assignments
-(6, 2, 'employee', 4, 100.00, 30.00, 30.00, '2024-02-01', '2024-02-15', 'completed', 'Classroom design completed'),
-(7, 2, 'employee', 7, 100.00, 80.00, 60.00, '2024-02-10', '2024-03-10', 'in_progress', 'Painting in progress'),
-(8, 2, 'employee', 7, 100.00, 40.00, 10.00, '2024-02-20', '2024-03-20', 'in_progress', 'Furniture being installed'),
-(9, 2, 'equipment', 2, 100.00, 25.00, 0.00, '2024-03-01', '2024-03-25', 'not_started', 'AV setup pending'),
+(1, 1, 'employee', 4, 100.00, 20.00, 20.00, '2024-04-01', '2024-04-15', 'completed', 'Camp site booked successfully'),
+(2, 1, 'employee', 5, 100.00, 30.00, 25.00, '2024-04-10', '2024-04-30', 'in_progress', 'Speaker coordination ongoing'),
+(3, 1, 'employee', 6, 100.00, 40.00, 30.00, '2024-04-20', '2024-05-10', 'in_progress', 'Food planning in progress'),
+(4, 1, 'equipment', 1, 100.00, 25.00, 10.00, '2024-05-01', '2024-05-20', 'in_progress', 'Bus transportation arranged'),
 
 -- Leadership Training Assignments
-(10, 3, 'employee', 2, 100.00, 60.00, 60.00, '2024-01-15', '2024-02-15', 'completed', 'Curriculum developed'),
-(11, 3, 'employee', 6, 100.00, 20.00, 15.00, '2024-02-01', '2024-02-28', 'completed', 'Trainers recruited'),
-(12, 3, 'employee', 4, 100.00, 40.00, 30.00, '2024-02-15', '2024-03-15', 'in_progress', 'Materials preparation'),
-(13, 3, 'equipment', 2, 100.00, 15.00, 0.00, '2024-03-01', '2024-03-31', 'not_started', 'Venue equipment needed'),
+(5, 2, 'employee', 4, 100.00, 60.00, 60.00, '2024-01-15', '2024-02-15', 'completed', 'Curriculum developed'),
+(6, 2, 'employee', 6, 100.00, 20.00, 20.00, '2024-02-01', '2024-02-28', 'completed', 'Trainers recruited'),
+(7, 2, 'employee', 7, 100.00, 40.00, 35.00, '2024-02-15', '2024-03-15', 'in_progress', 'Materials preparation'),
 
--- Community Feeding Program Assignments
-(14, 4, 'employee', 8, 100.00, 30.00, 30.00, '2024-01-01', '2024-01-31', 'completed', 'Beneficiaries identified'),
-(15, 4, 'employee', 5, 50.00, 50.00, 12.50, '2024-01-15', '2024-12-15', 'in_progress', 'Budget management'),
-(15, 4, 'employee', 10, 50.00, 50.00, 12.50, '2024-01-15', '2024-12-15', 'in_progress', 'Administrative support'),
-(16, 4, 'employee', 6, 100.00, 80.00, 20.00, '2024-01-01', '2024-12-31', 'in_progress', 'Volunteer coordination'),
-(17, 4, 'equipment', 4, 100.00, 150.00, 40.00, '2024-01-01', '2024-12-31', 'in_progress', 'Kitchen usage'),
+-- Community Feeding Assignments
+(8, 3, 'employee', 8, 100.00, 30.00, 30.00, '2024-01-01', '2024-01-31', 'completed', 'Beneficiaries identified'),
+(9, 3, 'employee', 9, 100.00, 100.00, 80.00, '2024-01-15', '2024-12-15', 'in_progress', 'Food procurement ongoing'),
+(10, 3, 'employee', 6, 100.00, 80.00, 60.00, '2024-01-01', '2024-12-31', 'in_progress', 'Volunteer coordination'),
+(11, 3, 'equipment', 11, 100.00, 150.00, 140.00, '2024-01-01', '2024-12-31', 'in_progress', 'Kitchen heavily used'),
 
--- Christmas Outreach Concert Assignments
-(18, 5, 'employee', 7, 100.00, 25.00, 20.00, '2024-10-01', '2024-10-15', 'completed', 'Venue booked successfully'),
-(19, 5, 'employee', 3, 100.00, 40.00, 15.00, '2024-10-10', '2024-11-30', 'in_progress', 'Coordinating performers'),
-(20, 5, 'employee', 8, 100.00, 60.00, 20.00, '2024-10-15', '2024-12-20', 'in_progress', 'Community outreach'),
-(21, 5, 'employee', 6, 100.00, 35.00, 10.00, '2024-11-01', '2024-12-25', 'in_progress', 'Ticket management'),
-(22, 5, 'equipment', 3, 100.00, 30.00, 0.00, '2024-12-20', '2024-12-24', 'not_started', 'Sound system setup'),
+-- Christmas Concert Assignments
+(12, 4, 'employee', 7, 100.00, 25.00, 15.00, '2024-10-01', '2024-10-15', 'in_progress', 'Venue booking in progress'),
+(13, 4, 'employee', 6, 100.00, 40.00, 20.00, '2024-10-10', '2024-11-30', 'in_progress', 'Artist coordination'),
 
--- Bible Study Materials Assignments
-(23, 6, 'employee', 4, 100.00, 80.00, 60.00, '2024-01-01', '2024-03-31', 'completed', 'Content developed'),
-(24, 6, 'employee', 9, 100.00, 40.00, 25.00, '2024-02-01', '2024-04-30', 'in_progress', 'Design work in progress'),
-(25, 6, 'equipment', 10, 100.00, 30.00, 10.00, '2024-04-01', '2024-05-15', 'in_progress', 'Printing materials'),
-(26, 6, 'employee', 10, 100.00, 25.00, 0.00, '2024-05-01', '2024-06-30', 'not_started', 'Distribution planning'),
+-- Bible Study Assignments
+(14, 5, 'employee', 7, 100.00, 80.00, 70.00, '2024-01-01', '2024-03-31', 'in_progress', 'Content development'),
+(15, 5, 'employee', 4, 100.00, 40.00, 30.00, '2024-02-01', '2024-12-31', 'in_progress', 'Session planning'),
 
--- Youth Fellowship Events Assignments
-(27, 7, 'employee', 2, 100.00, 20.00, 20.00, '2024-01-01', '2024-01-31', 'completed', 'Event calendar planned'),
-(28, 7, 'employee', 5, 100.00, 40.00, 25.00, '2024-01-01', '2024-12-31', 'in_progress', 'Budget management'),
-(29, 7, 'employee', 2, 100.00, 80.00, 30.00, '2024-02-01', '2024-12-31', 'in_progress', 'Activity coordination'),
-(30, 7, 'employee', 6, 100.00, 50.00, 20.00, '2024-01-15', '2024-12-15', 'in_progress', 'Venue bookings'),
-(31, 7, 'employee', 8, 100.00, 60.00, 25.00, '2024-01-01', '2024-12-31', 'in_progress', 'Youth engagement'),
+-- Youth Fellowship Assignments
+(16, 6, 'employee', 4, 100.00, 20.00, 20.00, '2024-01-01', '2024-01-31', 'completed', 'Event calendar planned'),
+(17, 6, 'employee', 5, 100.00, 80.00, 50.00, '2024-02-01', '2024-12-31', 'in_progress', 'Activity coordination');
 
--- Mission Trip Preparation Assignments
-(32, 8, 'employee', 1, 100.00, 30.00, 25.00, '2024-03-01', '2024-04-30', 'completed', 'Destinations researched'),
-(33, 8, 'employee', 6, 100.00, 40.00, 20.00, '2024-04-01', '2024-06-30', 'in_progress', 'Team recruitment'),
-(34, 8, 'employee', 5, 100.00, 60.00, 15.00, '2024-04-15', '2024-08-15', 'in_progress', 'Fundraising efforts'),
-(35, 8, 'employee', 7, 100.00, 35.00, 10.00, '2024-05-01', '2024-07-31', 'in_progress', 'Logistics planning'),
-(36, 8, 'employee', 2, 100.00, 25.00, 0.00, '2024-06-01', '2024-08-31', 'not_started', 'Training preparation');
-
--- Insert Resource Utilization Monitoring
+-- Insert Resource Utilization Monitoring with different workload levels
 INSERT INTO resource_utilization (resource_type, resource_id, project_id, date, total_hours_available, hours_used, utilization_percentage) VALUES
--- Employee utilization for current month
-('employee', 1, 1, '2024-03-15', 8.00, 6.00, 75.00),
-('employee', 2, 1, '2024-03-15', 8.00, 7.00, 87.50),
-('employee', 3, 1, '2024-03-15', 6.00, 4.00, 66.67),
-('employee', 4, 2, '2024-03-15', 8.00, 5.00, 62.50),
-('employee', 5, 4, '2024-03-15', 8.00, 6.00, 75.00),
-('employee', 6, 1, '2024-03-15', 6.00, 3.00, 50.00),
-('employee', 7, 2, '2024-03-15', 8.00, 4.00, 50.00),
-('employee', 8, 4, '2024-03-15', 8.00, 5.00, 62.50),
+-- UNDERUTILIZED employees (less than 60%)
+('employee', 1, NULL, '2024-03-15', 8.00, 2.00, 25.00),  -- John Smith
+('employee', 2, NULL, '2024-03-15', 8.00, 3.00, 38.00), -- Mary Johnson
+('employee', 3, NULL, '2024-03-15', 8.00, 4.00, 50.00),  -- Robert Davis
 
--- Equipment utilization for current month
-('equipment', 1, 1, '2024-03-15', 8.00, 2.00, 25.00),
-('equipment', 2, 3, '2024-03-15', 8.00, 2.00, 25.00),
-('equipment', 3, 1, '2024-03-15', 8.00, 3.20, 40.00),
-('equipment', 4, 4, '2024-03-15', 8.00, 3.20, 40.00);
+-- OPTIMAL utilization employees (60-85%)
+('employee', 4, 1, '2024-03-15', 8.00, 5.00, 63.00),  -- Rev. Jose Santos
+('employee', 5, 1, '2024-03-15', 8.00, 6.00, 75.00),   -- Sister Maria Reyes
+('employee', 6, 1, '2024-03-15', 6.00, 5.00, 83.00),   -- Brother Carlos Mendez
+('employee', 7, 2, '2024-03-15', 8.00, 7.00, 88.00),  -- Sister Ana Rodriguez
 
--- Insert Resource Allocation Alerts
+-- OVERLOADED employees (86-100%)
+('employee', 8, 3, '2024-03-15', 8.00, 8.00, 100.00), -- Brother David Chen
+('employee', 9, 3, '2024-03-15', 6.00, 6.00, 100.00),  -- Sister Grace Lee
+('employee', 10, 3, '2024-03-15', 8.00, 8.00, 100.00), -- Sister Sarah Gomez
+
+-- CRITICAL utilization employees (over 100%)
+('employee', 11, 1, '2024-03-15', 8.00, 9.00, 113.00), -- Michael Torres
+('employee', 12, 1, '2024-03-15', 8.00, 10.00, 125.00), -- James Park
+('employee', 13, 1, '2024-03-15', 8.00, 9.00, 113.00), -- Rachel Kim
+
+-- UNDERUTILIZED equipment (less than 60%)
+('equipment', 1, NULL, '2024-03-15', 8.00, 1.00, 13.00),   -- Church Bus
+('equipment', 2, NULL, '2024-03-15', 8.00, 1.00, 13.00),  -- Photography Equipment
+('equipment', 3, NULL, '2024-03-15', 8.00, 2.00, 25.00),   -- Generator
+('equipment', 4, NULL, '2024-03-15', 8.00, 2.00, 25.00),   -- Printing Press
+('equipment', 5, NULL, '2024-03-15', 8.00, 2.00, 25.00),  -- Tents and Tables
+
+-- OPTIMAL utilization equipment (60-85%)
+('equipment', 6, 2, '2024-03-15', 8.00, 5.00, 63.00),    -- Projector System
+('equipment', 7, 1, '2024-03-15', 8.00, 6.00, 75.00),    -- Sound System
+('equipment', 8, 1, '2024-03-15', 8.00, 6.00, 75.00),    -- Musical Instruments
+('equipment', 9, NULL, '2024-03-15', 8.00, 6.00, 75.00),  -- Computers
+
+-- OVERLOADED equipment (86-100%)
+('equipment', 10, 3, '2024-03-15', 8.00, 7.00, 88.00),    -- Kitchen Equipment
+
+-- CRITICAL utilization equipment (over 100%)
+('equipment', 11, 1, '2024-03-15', 8.00, 9.00, 113.00);   -- Additional Sound System
+
+-- Insert Resource Allocation Alerts for different scenarios
 INSERT INTO resource_alerts (alert_type, resource_type, resource_id, project_id, task_id, severity, message, threshold_value, current_value, status) VALUES
-('overallocation', 'employee', 2, 1, 2, 'medium', 'Youth Ministry Head approaching maximum workload', 8.00, 7.00, 'active'),
-('underutilization', 'employee', 9, NULL, NULL, 'low', 'IT Support underutilized - available for more tasks', 4.00, 2.00, 'active'),
-('capacity_warning', 'equipment', 1, 1, 4, 'medium', 'Church Bus capacity may be exceeded for summer camp', 40.00, 35.00, 'active'),
-('overallocation', 'budget', 4, 4, NULL, 'high', 'Feeding program budget usage exceeding monthly allocation', 16666.67, 45000.00, 'active'),
-('conflict', 'employee', 2, 1, 5, 'medium', 'Resource conflict between speaker coordination and registration management', 100.00, 100.00, 'active');
+-- UNDERUTILIZATION alerts
+('underutilization', 'employee', 1, NULL, NULL, 'low', 'IT Support severely underutilized - available for more tasks', 5.00, 2.00, 'active'),
+('underutilization', 'employee', 2, NULL, NULL, 'low', 'Administrative Assistant underutilized - can take on more work', 5.00, 3.00, 'active'),
+('underutilization', 'equipment', 1, NULL, NULL, 'low', 'Church Bus underutilized - available for transportation needs', 5.00, 1.00, 'active'),
+('underutilization', 'equipment', 2, NULL, NULL, 'low', 'Photography Equipment underutilized - available for documentation', 5.00, 1.00, 'active'),
+
+-- OVERALLOCATION alerts for OVERLOADED resources
+('overallocation', 'employee', 8, 3, NULL, 'medium', 'Treasurer approaching maximum workload - consider delegating', 7.00, 8.00, 'active'),
+('overallocation', 'employee', 9, 3, NULL, 'medium', 'Volunteer Coordinator at near capacity - review workload', 5.00, 6.00, 'active'),
+('overallocation', 'employee', 10, 3, NULL, 'high', 'Outreach Coordinator at maximum capacity', 7.00, 8.00, 'active'),
+('overallocation', 'equipment', 10, 3, NULL, 'medium', 'Kitchen Equipment near maximum usage', 7.00, 7.00, 'active'),
+
+-- CRITICAL overallocation alerts
+('overallocation', 'employee', 11, 1, NULL, 'critical', 'Facilities Manager critically overallocated - immediate action required', 7.00, 9.00, 'active'),
+('overallocation', 'employee', 12, 1, NULL, 'critical', 'IT Support Specialist critically overallocated - redistribute workload', 7.00, 10.00, 'active'),
+('overallocation', 'employee', 13, 1, NULL, 'critical', 'Administrative Assistant critically overallocated - urgent rebalancing needed', 7.00, 9.00, 'active'),
+('overallocation', 'equipment', 11, 1, NULL, 'critical', 'Additional Sound System over capacity - risk of equipment failure', 7.00, 9.00, 'active'),
+
+-- CAPACITY WARNING alerts
+('capacity_warning', 'budget', 1, 1, NULL, 'medium', 'Summer Camp budget usage approaching 50% - monitor spending', 75000.00, 75000.00, 'active'),
+('capacity_warning', 'budget', 3, 3, NULL, 'high', 'Feeding Program budget usage at 60% - careful budget management needed', 120000.00, 120000.00, 'active'),
+
+-- CONFLICT alerts
+('conflict', 'employee', 5, 1, 2, 'medium', 'Resource conflict between speaker coordination and food planning', 100.00, 100.00, 'active'),
+('conflict', 'employee', 6, 1, 3, 'medium', 'Resource conflict between food planning and volunteer coordination', 100.00, 100.00, 'active');
 
 -- Insert Budget Expenses
 INSERT INTO budget_expenses (project_id, budget_id, task_id, expense_description, amount, expense_date, expense_type, approved_by, status) VALUES
 (1, 1, 1, 'Camp site deposit', 25000.00, '2024-03-15', 'services', 'Rev. Jose Santos', 'approved'),
-(2, 2, 7, 'Paint and supplies', 15000.00, '2024-03-01', 'materials', 'Sister Maria Reyes', 'approved'),
-(2, 2, 8, 'New classroom furniture', 20000.00, '2024-03-10', 'materials', 'Brother David Chen', 'approved'),
-(3, 3, 10, 'Training curriculum printing', 8000.00, '2024-02-20', 'materials', 'Sister Maria Reyes', 'approved'),
-(3, 3, 11, 'Trainer honorariums', 7000.00, '2024-02-28', 'labor', 'Rev. Jose Santos', 'approved'),
-(4, 4, 14, 'Food supplies for March', 15000.00, '2024-03-15', 'materials', 'Brother David Chen', 'approved'),
-(4, 4, 17, 'Kitchen utilities', 5000.00, '2024-03-10', 'services', 'Sister Sarah Gomez', 'approved'),
-(6, 6, NULL, 'Bible study materials printing', 8000.00, '2024-02-15', 'materials', 'Sister Maria Reyes', 'approved'),
-(7, 7, NULL, 'Youth fellowship venue rental', 10000.00, '2024-03-01', 'services', 'Sister Grace Lee', 'approved'),
-(7, 7, NULL, 'Snacks and refreshments', 10000.00, '2024-03-05', 'materials', 'Sister Rachel Kim', 'approved'),
-(8, 8, NULL, 'Mission trip preliminary expenses', 5000.00, '2024-03-20', 'services', 'Sister Sarah Gomez', 'approved');
+(1, 1, 2, 'Speaker honorariums', 15000.00, '2024-03-20', 'labor', 'Sister Maria Reyes', 'approved'),
+(1, 1, 3, 'Food supplies advance', 35000.00, '2024-03-25', 'materials', 'Brother David Chen', 'approved'),
+(2, 2, 5, 'Training curriculum printing', 15000.00, '2024-02-20', 'materials', 'Sister Maria Reyes', 'approved'),
+(2, 2, 6, 'Trainer honorariums', 20000.00, '2024-02-28', 'labor', 'Rev. Jose Santos', 'approved'),
+(3, 3, 8, 'Food supplies - Q1', 50000.00, '2024-03-15', 'materials', 'Brother David Chen', 'approved'),
+(3, 3, 9, 'Food supplies - Q2 advance', 70000.00, '2024-03-20', 'materials', 'Brother David Chen', 'approved'),
+(5, 5, 12, 'Bible study materials printing', 15000.00, '2024-02-15', 'materials', 'Sister Maria Reyes', 'approved'),
+(6, 6, 14, 'Event venue rentals', 20000.00, '2024-03-01', 'services', 'Sister Grace Lee', 'approved'),
+(6, 6, 15, 'Activity supplies', 20000.00, '2024-03-05', 'materials', 'Sister Rachel Kim', 'approved');
