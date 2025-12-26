@@ -2,12 +2,21 @@
   const apiBase = 'api';
   const toastContainer = document.getElementById('toast-container');
   const seenAlertIds = new Set();
+  const toastQueue = [];
+  let isShowingToast = false;
 
-  const moneyFmt = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
+  const moneyFmt = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'PHP' });
   const percentFmt = (value) => `${Number(value ?? 0).toFixed(0)}%`;
+  let projectsCache = [];
+  let tasksCache = [];
+  let employeesCache = [];
+  let equipmentCache = [];
+  let budgetsCache = [];
 
-  function showToast(title, message, variant = 'primary') {
-    if (!toastContainer) return;
+  function processToastQueue() {
+    if (isShowingToast || !toastQueue.length || !toastContainer) return;
+    isShowingToast = true;
+    const { title, message, variant } = toastQueue.shift();
     const toastEl = document.createElement('div');
     toastEl.className = `toast align-items-center text-bg-${variant} border-0 mb-2`;
     toastEl.role = 'alert';
@@ -22,12 +31,21 @@
     `;
     toastContainer.appendChild(toastEl);
     const toast = new bootstrap.Toast(toastEl, { delay: 4000 });
+    toastEl.addEventListener('hidden.bs.toast', () => {
+      toastEl.remove();
+      isShowingToast = false;
+      processToastQueue();
+    });
     toast.show();
-    toastEl.addEventListener('hidden.bs.toast', () => toastEl.remove());
   }
 
-  async function fetchJSON(endpoint) {
-    const res = await fetch(`${apiBase}/${endpoint}`);
+  function showToast(title, message, variant = 'primary') {
+    toastQueue.push({ title, message, variant });
+    processToastQueue();
+  }
+
+  async function fetchJSON(endpoint, options = {}) {
+    const res = await fetch(`${apiBase}/${endpoint}`, options);
     if (!res.ok) {
       const text = await res.text();
       throw new Error(text || `Request failed (${res.status})`);
@@ -53,19 +71,16 @@
     setText('budget-allocated', budget ? moneyFmt.format(budget.total_allocated) : '--');
     setText('budget-spent', budget ? moneyFmt.format(budget.total_spent) : '--');
 
-    const totalAlerts = (alerts?.critical ?? 0) + (alerts?.high ?? 0) + (alerts?.medium ?? 0) + (alerts?.low ?? 0);
+    const critical = Number(alerts?.critical ?? 0);
+    const high = Number(alerts?.high ?? 0);
+    const medium = Number(alerts?.medium ?? 0);
+    const low = Number(alerts?.low ?? 0);
+    const totalAlerts = critical + high + medium + low;
     setText('alerts-total', totalAlerts);
-    setText('alerts-critical', alerts?.critical ?? 0);
-    setText('alerts-high', alerts?.high ?? 0);
-    setText('alerts-medium', alerts?.medium ?? 0);
-    setText('alerts-low', alerts?.low ?? 0);
-
-    // Utilization chips near summary (re-use alerts badges if desired)
-    if (utilization) {
-      const utilSummary = `Under: ${utilization.underutilized} · Optimal: ${utilization.optimal} · Overloaded: ${utilization.overloaded} · Critical: ${utilization.critical}`;
-      const badge = document.getElementById('utilization-summary');
-      if (badge) badge.textContent = utilSummary;
-    }
+    setText('alerts-critical', critical);
+    setText('alerts-high', high);
+    setText('alerts-medium', medium);
+    setText('alerts-low', low);
 
     // Resource totals (if placeholders added later)
     setText('resources-employees', resources?.employees ?? '--');
@@ -93,6 +108,97 @@
 
   function priorityChip(priority) {
     return `<span class="priority-chip priority-${priority ?? 'medium'}">${priority ?? 'medium'}</span>`;
+  }
+
+  function setSelectOptions(selectEl, items, formatFn, placeholder = 'Select...') {
+    if (!selectEl) return;
+    selectEl.innerHTML = '';
+    const ph = document.createElement('option');
+    ph.value = '';
+    ph.textContent = placeholder;
+    selectEl.appendChild(ph);
+    items.forEach((item) => {
+      const opt = document.createElement('option');
+      opt.value = item.value;
+      opt.textContent = formatFn(item);
+      selectEl.appendChild(opt);
+    });
+  }
+
+  function populateProjectSelect() {
+    const select = document.getElementById('assign-project');
+    if (!select) return;
+    const formatted = projectsCache.map((p) => ({
+      value: p.project_id,
+      label: `${p.project_name} (${p.status})`,
+      priority: p.priority,
+    }));
+    setSelectOptions(
+      select,
+      formatted,
+      (p) => `${p.label} · ${p.priority}`,
+      'Choose a project'
+    );
+    if (formatted.length) {
+      select.value = formatted[0].value;
+      select.dispatchEvent(new Event('change'));
+    }
+  }
+
+  function populateTaskSelect(projectId = 0, overrideTasks = null) {
+    const select = document.getElementById('assign-task');
+    if (!select) return;
+    const source = overrideTasks || tasksCache;
+    const filtered = projectId ? source.filter((t) => Number(t.project_id) === Number(projectId)) : source;
+    const formatted = filtered.map((t) => ({
+      value: t.task_id,
+      label: `${t.task_name} (${t.priority})`,
+    }));
+    setSelectOptions(select, formatted, (t) => t.label, 'Choose a task');
+    if (formatted.length) select.value = formatted[0].value;
+  }
+
+  function renderResourceOptions(data) {
+    const typeSelect = document.getElementById('assign-type');
+    const resourceSelect = document.getElementById('assign-resource');
+    if (!typeSelect || !resourceSelect) return;
+
+    const assignmentEmployees = data.employees || [];
+    const assignmentEquipment = data.equipment || [];
+    const assignmentBudgets = data.budgets || budgetsCache || [];
+    const type = typeSelect.value;
+
+    if (type === 'employee') {
+      setSelectOptions(
+        resourceSelect,
+        assignmentEmployees.map((e) => ({
+          value: e.id,
+          label: `${e.name} · ${percentFmt(e.utilization_percentage)} · ${e.department || e.role || ''}`,
+        })),
+        (e) => e.label,
+        'Choose an employee'
+      );
+    } else if (type === 'equipment') {
+      setSelectOptions(
+        resourceSelect,
+        assignmentEquipment.map((eq) => ({
+          value: eq.id,
+          label: `${eq.name} · ${eq.type} · ${percentFmt(eq.utilization_percentage)}`,
+        })),
+        (eq) => eq.label,
+        'Choose equipment'
+      );
+    } else {
+      setSelectOptions(
+        resourceSelect,
+        assignmentBudgets.map((b) => ({
+          value: b.id,
+          label: `${b.name} · Remaining ${moneyFmt.format(b.remaining_amount ?? 0)}`,
+        })),
+        (b) => b.label,
+        'Choose budget'
+      );
+    }
   }
 
   function renderAlerts(alerts) {
@@ -260,7 +366,8 @@
   async function loadEmployees(query = '') {
     try {
       const data = await fetchJSON(`employees.php${query ? `?q=${encodeURIComponent(query)}` : ''}`);
-      renderEmployees(data.employees || []);
+      employeesCache = data.employees || [];
+      renderEmployees(employeesCache);
     } catch (err) {
       console.error(err);
       showToast('Employee load error', err.message, 'danger');
@@ -270,7 +377,8 @@
   async function loadEquipment(query = '') {
     try {
       const data = await fetchJSON(`equipment.php${query ? `?q=${encodeURIComponent(query)}` : ''}`);
-      renderEquipment(data.equipment || []);
+      equipmentCache = data.equipment || [];
+      renderEquipment(equipmentCache);
     } catch (err) {
       console.error(err);
       showToast('Equipment load error', err.message, 'danger');
@@ -280,20 +388,215 @@
   async function loadProjects() {
     try {
       const data = await fetchJSON('projects.php');
-      renderProjects(data.projects || []);
+      projectsCache = data.projects || [];
+      renderProjects(projectsCache);
+      populateProjectSelect();
     } catch (err) {
       console.error(err);
       showToast('Project load error', err.message, 'danger');
     }
   }
 
-  async function loadTasks() {
+  async function loadTasks(projectId = 0) {
     try {
-      const data = await fetchJSON('tasks.php');
-      renderTasks(data.tasks || []);
+      const query = projectId ? `?project_id=${projectId}` : '';
+      const data = await fetchJSON(`tasks.php${query}`);
+      tasksCache = data.tasks || [];
+      renderTasks(tasksCache);
+      populateTaskSelect(projectId);
     } catch (err) {
       console.error(err);
       showToast('Task load error', err.message, 'danger');
+    }
+  }
+
+  async function loadBudgets(projectId = 0) {
+    try {
+      const query = projectId ? `?project_id=${projectId}` : '';
+      const data = await fetchJSON(`budgets.php${query}`);
+      budgetsCache = data.budgets || [];
+    } catch (err) {
+      console.error(err);
+      showToast('Budget load error', err.message, 'danger');
+    }
+  }
+
+  async function loadUtilization() {
+    try {
+      const data = await fetchJSON('utilization.php');
+      renderUtilizationLists(data);
+    } catch (err) {
+      console.error(err);
+      showToast('Utilization load error', err.message, 'danger');
+    }
+  }
+
+  async function loadAssignmentOptions(projectId) {
+    try {
+      const data = await fetchJSON(`assignment_options.php${projectId ? `?project_id=${projectId}` : ''}`);
+      if (projectId) {
+        // overwrite tasks for this project in form only; table uses loadTasks
+        populateTaskSelect(projectId, data.tasks || []);
+        budgetsCache = data.budgets || [];
+      }
+      renderResourceOptions(data);
+    } catch (err) {
+      console.error(err);
+      showToast('Assignment options error', err.message, 'danger');
+    }
+  }
+
+  function findResourceName(type, id) {
+    if (type === 'employee') {
+      const match = employeesCache.find((e) => Number(e.employee_id ?? e.id) === Number(id));
+      return match ? match.employee_name || match.name : `Employee #${id}`;
+    }
+    const match = equipmentCache.find((e) => Number(e.equipment_id ?? e.id) === Number(id));
+    return match ? match.equipment_name || match.name : `Equipment #${id}`;
+  }
+
+  function renderUtilizationLists(data) {
+    const underList = document.getElementById('underutilized-list');
+    const overList = document.getElementById('overloaded-list');
+    const latest = document.getElementById('utilization-latest');
+    if (latest && data.latest_date) latest.textContent = `Latest snapshot: ${data.latest_date}`;
+    if (!underList || !overList) return;
+
+    const underItems = [
+      ...(data.employees?.underutilized || []).map((e) => ({ type: 'employee', ...e })),
+      ...(data.equipment?.underutilized || []).map((e) => ({ type: 'equipment', ...e })),
+      ...(data.employees?.optimal || []).map((e) => ({ type: 'employee', ...e })),
+      ...(data.equipment?.optimal || []).map((e) => ({ type: 'equipment', ...e })),
+    ];
+    const overItems = [
+      ...(data.employees?.overloaded || []).map((e) => ({ type: 'employee', ...e })),
+      ...(data.employees?.critical || []).map((e) => ({ type: 'employee', ...e })),
+      ...(data.equipment?.overloaded || []).map((e) => ({ type: 'equipment', ...e })),
+      ...(data.equipment?.critical || []).map((e) => ({ type: 'equipment', ...e })),
+    ];
+
+    underList.innerHTML = '';
+    overList.innerHTML = '';
+
+    if (!underItems.length) {
+      underList.innerHTML = '<div class="list-group-item text-muted">No available capacity detected.</div>';
+    } else {
+      underItems.forEach((item) => {
+        underList.insertAdjacentHTML(
+          'beforeend',
+          `<div class="list-group-item d-flex justify-content-between">
+            <div>
+              <strong>${findResourceName(item.type, item.resource_id)}</strong>
+              <div class="text-muted">${item.type}</div>
+            </div>
+            <span class="utilization-pill util-underutilized">${percentFmt(item.utilization_percentage)} · ${item.workload_level}</span>
+          </div>`
+        );
+      });
+    }
+
+    if (!overItems.length) {
+      overList.innerHTML = '<div class="list-group-item text-muted">No overloaded resources.</div>';
+    } else {
+      overItems.forEach((item) => {
+        overList.insertAdjacentHTML(
+          'beforeend',
+          `<div class="list-group-item d-flex justify-content-between">
+            <div>
+              <strong>${findResourceName(item.type, item.resource_id)}</strong>
+              <div class="text-muted">${item.type}</div>
+            </div>
+            <span class="utilization-pill ${item.workload_level === 'critical' ? 'util-critical' : 'util-overloaded'}">${percentFmt(item.utilization_percentage)} · ${item.workload_level}</span>
+          </div>`
+        );
+      });
+    }
+  }
+
+  function bindAssignmentForm() {
+    const projectSelect = document.getElementById('assign-project');
+    const typeSelect = document.getElementById('assign-type');
+    const resourceSelect = document.getElementById('assign-resource');
+    const form = document.getElementById('assignment-form');
+    const note = document.getElementById('assign-availability-note');
+    const startInput = document.getElementById('assign-start');
+    const endInput = document.getElementById('assign-end');
+
+    if (startInput && endInput) {
+      const today = new Date().toISOString().split('T')[0];
+      if (!startInput.value) startInput.value = today;
+      if (!endInput.value) endInput.value = today;
+    }
+
+    if (projectSelect) {
+      projectSelect.addEventListener('change', (e) => {
+        const projectId = Number(e.target.value);
+        loadTasks(projectId);
+        loadBudgets(projectId);
+        loadAssignmentOptions(projectId);
+        if (note) note.textContent = projectId ? 'Options filtered by selected project.' : 'Select a project to load tasks and resources.';
+      });
+    }
+
+    if (typeSelect) {
+      typeSelect.addEventListener('change', () => {
+        const projectId = Number(projectSelect?.value || 0);
+        loadAssignmentOptions(projectId);
+      });
+    }
+
+    if (form) {
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const projectId = Number(projectSelect?.value || 0);
+        const taskId = Number(document.getElementById('assign-task')?.value || 0);
+        const assignmentType = typeSelect?.value;
+        const resourceId = Number(resourceSelect?.value || 0);
+        const allocation_percentage = Number(document.getElementById('assign-percentage')?.value || 0);
+        const allocated_hours = Number(document.getElementById('assign-hours')?.value || 0);
+        const start_date = document.getElementById('assign-start')?.value;
+        const end_date = document.getElementById('assign-end')?.value;
+        const notes = document.getElementById('assign-notes')?.value || '';
+
+        if (!projectId || !taskId || !assignmentType || !resourceId || !start_date || !end_date) {
+          showToast('Missing info', 'Please fill required fields.', 'warning');
+          return;
+        }
+
+        if (new Date(start_date) > new Date(end_date)) {
+          showToast('Date error', 'Start date must be before end date.', 'warning');
+          return;
+        }
+
+        submitAssignment({
+          project_id: projectId,
+          task_id: taskId,
+          assignment_type: assignmentType,
+          resource_id: resourceId,
+          allocation_percentage,
+          allocated_hours,
+          start_date,
+          end_date,
+          notes,
+        });
+      });
+    }
+  }
+
+  async function submitAssignment(payload) {
+    try {
+      await fetchJSON('assignments.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      showToast('Assigned', 'Resource added to task', 'success');
+      loadAlerts();
+      loadTasks(payload.project_id);
+      loadUtilization();
+    } catch (err) {
+      console.error(err);
+      showToast('Assign failed', err.message, 'danger');
     }
   }
 
@@ -312,6 +615,7 @@
   function bindRefreshButtons() {
     const refreshBtn = document.getElementById('refresh-btn');
     const alertsRefresh = document.getElementById('alerts-refresh');
+    const assignRefresh = document.getElementById('assign-refresh');
     if (refreshBtn) {
       refreshBtn.addEventListener('click', () => {
         showToast('Refreshing', 'Fetching the latest data...', 'info');
@@ -319,6 +623,11 @@
       });
     }
     if (alertsRefresh) alertsRefresh.addEventListener('click', loadAlerts);
+    if (assignRefresh) assignRefresh.addEventListener('click', () => {
+      const projectSelect = document.getElementById('assign-project');
+      const projectId = projectSelect ? Number(projectSelect.value) : 0;
+      loadAssignmentOptions(projectId);
+    });
   }
 
   function loadAll() {
@@ -328,11 +637,14 @@
     loadEquipment();
     loadProjects();
     loadTasks();
+    loadBudgets();
+    loadUtilization();
   }
 
   document.addEventListener('DOMContentLoaded', () => {
     bindSearchInputs();
     bindRefreshButtons();
+    bindAssignmentForm();
     loadAll();
     setInterval(loadAlerts, 20000);
   });

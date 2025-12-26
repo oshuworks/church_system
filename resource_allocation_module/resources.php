@@ -83,10 +83,6 @@ $activePage = 'resources';
       </div>
     </section>
 
-    <div class="mb-4">
-      <span class="badge bg-light text-dark" id="utilization-summary"></span>
-    </div>
-
     <section class="card shadow-sm mb-4">
       <div class="card-body">
         <div class="d-flex justify-content-between align-items-center mb-3">
