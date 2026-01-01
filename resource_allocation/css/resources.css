@@ -1,0 +1,71 @@
+body {
+    background-color: #f5f6fa;
+}
+
+#summary-cards .card {
+    border: 1px solid #e5e7eb;
+}
+
+.status-pill {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: capitalize;
+}
+
+.status-planning { background-color: #e0f2fe; color: #075985; }
+.status-active { background-color: #dcfce7; color: #166534; }
+.status-completed { background-color: #e2e8f0; color: #1f2937; }
+.status-on_hold { background-color: #fef3c7; color: #92400e; }
+.status-cancelled { background-color: #fee2e2; color: #991b1b; }
+.status-not_started { background-color: #e0f2fe; color: #075985; }
+.status-in_progress { background-color: #fef9c3; color: #854d0e; }
+.status-blocked { background-color: #fee2e2; color: #991b1b; }
+.status-assigned { background-color: #e0f2fe; color: #075985; }
+.status-available { background-color: #dcfce7; color: #166534; }
+.status-in_use { background-color: #fef9c3; color: #854d0e; }
+.status-maintenance { background-color: #ffe4e6; color: #9f1239; }
+.status-reserved { background-color: #ede9fe; color: #5b21b6; }
+.status-retired { background-color: #e5e7eb; color: #374151; }
+
+.priority-chip {
+    padding: 4px 8px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: capitalize;
+}
+
+.priority-low { background-color: #e0f2fe; color: #0369a1; }
+.priority-medium { background-color: #f3e8ff; color: #6b21a8; }
+.priority-high { background-color: #ffedd5; color: #c2410c; }
+.priority-critical { background-color: #fee2e2; color: #991b1b; }
+
+.utilization-pill {
+    padding: 6px 10px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 12px;
+}
+
+.util-underutilized { background-color: #e0f2fe; color: #075985; }
+.util-optimal { background-color: #dcfce7; color: #166534; }
+.util-overloaded { background-color: #fef9c3; color: #854d0e; }
+.util-critical { background-color: #fee2e2; color: #991b1b; }
+
+.table th {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.table td {
+    font-size: 14px;
+}
+
+.list-group-item.alert-critical { border-left: 4px solid #dc2626; }
+.list-group-item.alert-high { border-left: 4px solid #f97316; }
+.list-group-item.alert-medium { border-left: 4px solid #0ea5e9; }
+.list-group-item.alert-low { border-left: 4px solid #6b7280; }
