@@ -2,6 +2,31 @@
 // Shared bootstrap for API endpoints: database connection and helpers.
 header('Content-Type: application/json');
 
+// Enable CORS for API requests
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type');
+
+// Handle preflight OPTIONS request
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    exit(0);
+}
+
+// Basic input sanitization function
+function sanitizeInput($data) {
+    if (is_array($data)) {
+        return array_map('sanitizeInput', $data);
+    }
+    return htmlspecialchars(trim($data), ENT_QUOTES, 'UTF-8');
+}
+
+// Get and sanitize input
+$input = json_decode(file_get_contents('php://input'), true);
+if ($input) {
+    $input = sanitizeInput($input);
+    $_POST = array_merge($_POST, $input);
+}
+
 $dbConfig = [
     'host' => 'localhost',
     'user' => 'root',

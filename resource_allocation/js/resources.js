@@ -71,16 +71,18 @@
     setText('budget-allocated', budget ? moneyFmt.format(budget.total_allocated) : '--');
     setText('budget-spent', budget ? moneyFmt.format(budget.total_spent) : '--');
 
-    const critical = Number(alerts?.critical ?? 0);
-    const high = Number(alerts?.high ?? 0);
-    const medium = Number(alerts?.medium ?? 0);
-    const low = Number(alerts?.low ?? 0);
-    const totalAlerts = critical + high + medium + low;
-    setText('alerts-total', totalAlerts);
-    setText('alerts-critical', critical);
-    setText('alerts-high', high);
-    setText('alerts-medium', medium);
-    setText('alerts-low', low);
+    // Utilization summary
+    const under = Number(utilization?.underutilized ?? 0);
+    const optimal = Number(utilization?.optimal ?? 0);
+    const over = Number(utilization?.overloaded ?? 0);
+    const critical = Number(utilization?.critical ?? 0);
+    const totalUtilization = under + optimal + over + critical;
+    setText('utilization-total', totalUtilization);
+    setText('utilization-under', under);
+    setText('utilization-optimal', optimal);
+    setText('utilization-over', over);
+    setText('utilization-critical', critical);
+
 
     // Resource totals (if placeholders added later)
     setText('resources-employees', resources?.employees ?? '--');
@@ -201,146 +203,297 @@
     }
   }
 
-  function renderAlerts(alerts) {
-    const list = document.getElementById('alerts-list');
-    const empty = document.getElementById('alerts-empty');
-    if (!list || !empty) return;
-
-    list.innerHTML = '';
-    if (!alerts.length) {
-      empty.classList.remove('d-none');
-      return;
-    }
-    empty.classList.add('d-none');
-
-    alerts.forEach((alert) => {
-      const severityClass = `alert-${alert.severity}`;
-      const item = document.createElement('a');
-      item.className = `list-group-item list-group-item-action ${severityClass}`;
-      item.innerHTML = `
-        <div class="d-flex w-100 justify-content-between">
-          <h6 class="mb-1 text-capitalize">${alert.alert_type.replace('_', ' ')} · ${alert.resource_type}</h6>
-          <span class="badge bg-${alert.severity === 'critical' ? 'danger' : alert.severity === 'high' ? 'warning text-dark' : alert.severity === 'medium' ? 'info text-dark' : 'secondary'}">${alert.severity}</span>
-        </div>
-        <p class="mb-1 small">${alert.message}</p>
-        <small class="text-muted">Resource ID: ${alert.resource_id}${alert.project_id ? ` · Project #${alert.project_id}` : ''}${alert.task_id ? ` · Task #${alert.task_id}` : ''}</small>
-      `;
-      list.appendChild(item);
-
-      if (!seenAlertIds.has(alert.alert_id)) {
-        seenAlertIds.add(alert.alert_id);
-        const variant = alert.severity === 'critical' ? 'danger' : alert.severity === 'high' ? 'warning' : 'primary';
-        showToast(`New ${alert.severity} alert`, alert.message, variant);
-      }
-    });
-  }
 
   function renderEmployees(rows) {
     const tbody = document.getElementById('employees-body');
+    const countEl = document.getElementById('employees-count');
     if (!tbody) return;
-    tbody.innerHTML = '';
-    if (!rows.length) {
-      tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-4">No employees found.</td></tr>`;
-      return;
+    
+    // Store full data for pagination
+    window.employeesData = rows || [];
+    
+    // Initialize pagination
+    if (!window.employeesPagination) {
+      window.employeesPagination = { page: 1, pageSize: 5 };
     }
-    rows.forEach((e) => {
-      const utilization = e.latest_utilization ?? e.utilization_percentage;
-      tbody.insertAdjacentHTML('beforeend', `
-        <tr>
-          <td>
-            <div class="fw-semibold">${e.employee_name}</div>
-            <div class="text-muted small">${e.email}</div>
-          </td>
-          <td>${e.role}</td>
-          <td>${e.department ?? '—'}</td>
-          <td>${statusPill(e.status)}</td>
-          <td class="text-center">${workloadBadge(e.workload_level ?? 'underutilized', utilization)}</td>
-          <td class="text-end">${moneyFmt.format(e.hourly_rate ?? 0)}</td>
-        </tr>
-      `);
-    });
+    
+    // Render paginated data
+    renderPaginatedTable('employees', window.employeesData, window.employeesPagination, renderEmployeeRow);
+    
+    // Update count
+    if (countEl) countEl.textContent = `${window.employeesData.length} employees`;
+    
+    // Bind pagination controls
+    bindTablePagination('employees');
+  }
+
+  function renderEmployeeRow(employee) {
+    const utilization = employee.latest_utilization ?? employee.utilization_percentage;
+    const assignments = employee.current_assignments || 0;
+    const projects = employee.assigned_projects || 'None';
+    
+    return `
+      <tr>
+        <td>
+          <div class="fw-semibold">${employee.employee_name}</div>
+          <div class="text-muted small">${employee.email}</div>
+        </td>
+        <td>${employee.role}</td>
+        <td>${employee.department ?? '—'}</td>
+        <td>${statusPill(employee.status)}</td>
+        <td class="text-center">
+          <div class="fw-semibold">${assignments}</div>
+          <div class="text-muted small">${projects.length > 20 ? projects.substring(0, 20) + '...' : projects}</div>
+        </td>
+        <td class="text-center">${workloadBadge(employee.workload_level ?? 'underutilized', utilization)}</td>
+        <td class="text-end">${moneyFmt.format(employee.hourly_rate ?? 0)}</td>
+      </tr>
+    `;
   }
 
   function renderEquipment(rows) {
     const tbody = document.getElementById('equipment-body');
+    const countEl = document.getElementById('equipment-count');
     if (!tbody) return;
-    tbody.innerHTML = '';
-    if (!rows.length) {
-      tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-4">No equipment found.</td></tr>`;
-      return;
+    
+    // Store full data for pagination
+    window.equipmentData = rows || [];
+    
+    // Initialize pagination
+    if (!window.equipmentPagination) {
+      window.equipmentPagination = { page: 1, pageSize: 5 };
     }
-    rows.forEach((eq) => {
-      const utilization = eq.latest_utilization ?? eq.utilization_percentage;
-      tbody.insertAdjacentHTML('beforeend', `
-        <tr>
-          <td class="fw-semibold">${eq.equipment_name}</td>
-          <td>${eq.equipment_type}</td>
-          <td>${eq.location ?? '—'}</td>
-          <td>${statusPill(eq.status)}</td>
-          <td class="text-center">${workloadBadge(eq.workload_level ?? 'underutilized', utilization)}</td>
-          <td class="text-end">${moneyFmt.format(eq.hourly_rate ?? 0)}</td>
-        </tr>
-      `);
-    });
+    
+    // Render paginated data
+    renderPaginatedTable('equipment', window.equipmentData, window.equipmentPagination, renderEquipmentRow);
+    
+    // Update count
+    if (countEl) countEl.textContent = `${window.equipmentData.length} equipment`;
+    
+    // Bind pagination controls
+    bindTablePagination('equipment');
+  }
+
+  function renderEquipmentRow(eq) {
+    const utilization = eq.latest_utilization ?? eq.utilization_percentage;
+    const assignments = eq.current_assignments || 0;
+    const projects = eq.assigned_projects || 'None';
+    
+    return `
+      <tr>
+        <td class="fw-semibold">${eq.equipment_name}</td>
+        <td>${eq.equipment_type}</td>
+        <td>${eq.location ?? '—'}</td>
+        <td>${statusPill(eq.status)}</td>
+        <td class="text-center">
+          <div class="fw-semibold">${assignments}</div>
+          <div class="text-muted small">${projects.length > 20 ? projects.substring(0, 20) + '...' : projects}</div>
+        </td>
+        <td class="text-center">${workloadBadge(eq.workload_level ?? 'underutilized', utilization)}</td>
+        <td class="text-end">${moneyFmt.format(eq.hourly_rate ?? 0)}</td>
+      </tr>
+    `;
   }
 
   function renderProjects(rows) {
     const tbody = document.getElementById('projects-body');
+    const countEl = document.getElementById('projects-count');
     if (!tbody) return;
-    tbody.innerHTML = '';
-    if (!rows.length) {
-      tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-4">No projects found.</td></tr>`;
-      return;
+    
+    // Store full data for pagination
+    window.projectsData = rows || [];
+    
+    // Initialize pagination
+    if (!window.projectsPagination) {
+      window.projectsPagination = { page: 1, pageSize: 5 };
     }
-    rows.forEach((p) => {
-      const progress = Number(p.avg_progress ?? 0).toFixed(0);
-      tbody.insertAdjacentHTML('beforeend', `
-        <tr>
-          <td class="fw-semibold">${p.project_name}</td>
-          <td>${statusPill(p.status)}</td>
-          <td>${priorityChip(p.priority)}</td>
-          <td><small class="text-muted">${p.start_date} → ${p.end_date}</small></td>
-          <td class="text-center">
-            <div class="progress" style="height: 8px;">
-              <div class="progress-bar" role="progressbar" style="width: ${progress}%;" aria-valuenow="${progress}" aria-valuemin="0" aria-valuemax="100"></div>
-            </div>
-            <small class="text-muted">${progress}%</small>
-          </td>
-          <td class="text-end">
-            <div>${moneyFmt.format(p.budget_allocated ?? 0)}</div>
-            <small class="text-muted">Spent ${moneyFmt.format(p.total_spent ?? 0)}</small>
-          </td>
-        </tr>
-      `);
-    });
+    
+    // Render paginated data
+    renderPaginatedTable('projects', window.projectsData, window.projectsPagination, renderProjectRow);
+    
+    // Update count
+    if (countEl) countEl.textContent = `${window.projectsData.length} projects`;
+    
+    // Bind pagination controls
+    bindTablePagination('projects');
+  }
+
+  function renderProjectRow(p) {
+    const progress = Number(p.avg_progress ?? 0).toFixed(0);
+    const totalAssignments = p.total_assignments || 0;
+    const employees = p.employees_assigned || 0;
+    const equipment = p.equipment_assigned || 0;
+    const budgets = p.budgets_assigned || 0;
+    
+    let resourceSummary = '';
+    if (totalAssignments > 0) {
+      const parts = [];
+      if (employees > 0) parts.push(`${employees} 👤`);
+      if (equipment > 0) parts.push(`${equipment} 🛠️`);
+      if (budgets > 0) parts.push(`${budgets} 💰`);
+      resourceSummary = parts.join(' · ');
+    } else {
+      resourceSummary = 'None';
+    }
+    
+    return `
+      <tr>
+        <td class="fw-semibold">${p.project_name}</td>
+        <td>${statusPill(p.status)}</td>
+        <td>${priorityChip(p.priority)}</td>
+        <td><small class="text-muted">${p.start_date} → ${p.end_date}</small></td>
+        <td class="text-center">
+          <div class="progress" style="height: 8px;">
+            <div class="progress-bar" role="progressbar" style="width: ${progress}%;" aria-valuenow="${progress}" aria-valuemin="0" aria-valuemax="100"></div>
+          </div>
+          <small class="text-muted">${progress}%</small>
+        </td>
+        <td class="text-center">
+          <div class="fw-semibold">${totalAssignments}</div>
+          <div class="text-muted small">${resourceSummary}</div>
+        </td>
+        <td class="text-end">
+          <div>${moneyFmt.format(p.budget_allocated ?? 0)}</div>
+          <small class="text-muted">Spent ${moneyFmt.format(p.total_spent ?? 0)}</small>
+        </td>
+      </tr>
+    `;
   }
 
   function renderTasks(rows) {
     const tbody = document.getElementById('tasks-body');
+    const countEl = document.getElementById('tasks-count');
     if (!tbody) return;
+    
+    // Store full data for pagination
+    window.tasksData = rows || [];
+    
+    // Initialize pagination
+    if (!window.tasksPagination) {
+      window.tasksPagination = { page: 1, pageSize: 5 };
+    }
+    
+    // Render paginated data
+    renderPaginatedTable('tasks', window.tasksData, window.tasksPagination, renderTaskRow);
+    
+    // Update count
+    if (countEl) countEl.textContent = `${window.tasksData.length} tasks`;
+    
+    // Bind pagination controls
+    bindTablePagination('tasks');
+  }
+
+  function renderTaskRow(t) {
+    const progress = Number(t.progress_percentage ?? 0).toFixed(0);
+    const assignedCount = t.assigned_count || 0;
+    const assignedResources = t.assigned_resources || 'None';
+    
+    return `
+      <tr>
+        <td class="fw-semibold">${t.task_name}</td>
+        <td>${t.project_name}</td>
+        <td>${statusPill(t.status)}</td>
+        <td>${priorityChip(t.priority)}</td>
+        <td><small class="text-muted">${t.start_date} → ${t.end_date}</small></td>
+        <td class="text-center">
+          <div class="progress" style="height: 8px;">
+            <div class="progress-bar bg-success" role="progressbar" style="width: ${progress}%;" aria-valuenow="${progress}" aria-valuemin="0" aria-valuemax="100"></div>
+          </div>
+          <small class="text-muted">${progress}%</small>
+        </td>
+        <td class="text-center">
+          <div class="fw-semibold">${assignedCount}</div>
+          <div class="text-muted small">${assignedResources.length > 30 ? assignedResources.substring(0, 30) + '...' : assignedResources}</div>
+        </td>
+      </tr>
+    `;
+  }
+
+  // Generic pagination functions for tables
+  function renderPaginatedTable(tableName, data, pagination, renderRowFunction) {
+    const tbody = document.getElementById(`${tableName}-body`);
+    if (!tbody || !data) return;
+
+    const startIndex = (pagination.page - 1) * pagination.pageSize;
+    const endIndex = startIndex + pagination.pageSize;
+    const pageItems = data.slice(startIndex, endIndex);
+
     tbody.innerHTML = '';
-    if (!rows.length) {
-      tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-4">No tasks found.</td></tr>`;
+    
+    if (!pageItems.length) {
+      tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-4">No ${tableName} found.</td></tr>`;
       return;
     }
-    rows.forEach((t) => {
-      const progress = Number(t.progress_percentage ?? 0).toFixed(0);
-      tbody.insertAdjacentHTML('beforeend', `
-        <tr>
-          <td class="fw-semibold">${t.task_name}</td>
-          <td>${t.project_name}</td>
-          <td>${statusPill(t.status)}</td>
-          <td>${priorityChip(t.priority)}</td>
-          <td><small class="text-muted">${t.start_date} → ${t.end_date}</small></td>
-          <td class="text-center">
-            <div class="progress" style="height: 8px;">
-              <div class="progress-bar bg-success" role="progressbar" style="width: ${progress}%;" aria-valuenow="${progress}" aria-valuemin="0" aria-valuemax="100"></div>
-            </div>
-            <small class="text-muted">${progress}%</small>
-          </td>
-        </tr>
-      `);
+
+    pageItems.forEach(item => {
+      tbody.insertAdjacentHTML('beforeend', renderRowFunction(item));
     });
+
+    // Update pagination buttons
+    updateTablePaginationButtons(tableName, data, pagination);
+  }
+
+  function updateTablePaginationButtons(tableName, data, pagination) {
+    const totalPages = Math.ceil(data.length / pagination.pageSize);
+    const prevBtn = document.getElementById(`${tableName}-prev`);
+    const nextBtn = document.getElementById(`${tableName}-next`);
+    
+    if (prevBtn) prevBtn.disabled = pagination.page <= 1;
+    if (nextBtn) nextBtn.disabled = pagination.page >= totalPages;
+  }
+
+  function bindTablePagination(tableName) {
+    const prevBtn = document.getElementById(`${tableName}-prev`);
+    const nextBtn = document.getElementById(`${tableName}-next`);
+    const pagination = window[`${tableName}Pagination`];
+    const data = window[`${tableName}Data`];
+    
+    if (prevBtn) {
+      prevBtn.onclick = () => {
+        if (pagination.page > 1) {
+          pagination.page--;
+          // Call the appropriate render function based on table name
+          switch(tableName) {
+            case 'employees':
+              renderPaginatedTable('employees', data, pagination, renderEmployeeRow);
+              break;
+            case 'equipment':
+              renderPaginatedTable('equipment', data, pagination, renderEquipmentRow);
+              break;
+            case 'projects':
+              renderPaginatedTable('projects', data, pagination, renderProjectRow);
+              break;
+            case 'tasks':
+              renderPaginatedTable('tasks', data, pagination, renderTaskRow);
+              break;
+          }
+        }
+      };
+    }
+    
+    if (nextBtn) {
+      nextBtn.onclick = () => {
+        const totalPages = Math.ceil(data.length / pagination.pageSize);
+        if (pagination.page < totalPages) {
+          pagination.page++;
+          // Call the appropriate render function based on table name
+          switch(tableName) {
+            case 'employees':
+              renderPaginatedTable('employees', data, pagination, renderEmployeeRow);
+              break;
+            case 'equipment':
+              renderPaginatedTable('equipment', data, pagination, renderEquipmentRow);
+              break;
+            case 'projects':
+              renderPaginatedTable('projects', data, pagination, renderProjectRow);
+              break;
+            case 'tasks':
+              renderPaginatedTable('tasks', data, pagination, renderTaskRow);
+              break;
+          }
+        }
+      };
+    }
   }
 
   async function loadSummary() {
@@ -353,13 +506,117 @@
     }
   }
 
-  async function loadAlerts() {
+
+  async function loadAssignments(filter = 'all', status = 'assigned') {
     try {
-      const data = await fetchJSON('alerts.php');
-      renderAlerts(data.alerts || []);
+      const queryParams = new URLSearchParams();
+      if (filter !== 'all') queryParams.append('assignment_type', filter);
+      if (status !== 'assigned') queryParams.append('status', status);
+      
+      const data = await fetchJSON(`assignments.php${queryParams.toString() ? '?' + queryParams.toString() : ''}`);
+      renderAssignments(data.assignments || []);
     } catch (err) {
       console.error(err);
-      showToast('Alert load error', err.message, 'danger');
+      showToast('Assignments load error', err.message, 'danger');
+    }
+  }
+
+  function renderAssignments(assignments) {
+    const tbody = document.getElementById('assignments-list');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+    if (!assignments.length) {
+      tbody.innerHTML = `<tr><td colspan="9" class="text-center text-muted py-4">No assignments found.</td></tr>`;
+      return;
+    }
+
+    assignments.forEach((assignment) => {
+      const allocationPercent = percentFmt(assignment.allocation_percentage);
+      const hoursText = `${assignment.allocated_hours}h / ${assignment.actual_hours_used || 0}h used`;
+      const datesText = `${assignment.start_date} → ${assignment.end_date}`;
+      
+      tbody.insertAdjacentHTML('beforeend', `
+        <tr>
+          <td>
+            <div class="fw-semibold">${assignment.resource_name}</div>
+            <div class="text-muted small">ID: ${assignment.resource_id}</div>
+          </td>
+          <td>
+            <span class="badge bg-light text-dark">${assignment.assignment_type}</span>
+          </td>
+          <td>
+            <div class="fw-semibold">${assignment.project_name}</div>
+            <div class="text-muted small">ID: ${assignment.project_id}</div>
+          </td>
+          <td>
+            <div class="fw-semibold">${assignment.task_name}</div>
+            <div class="text-muted small">ID: ${assignment.task_id}</div>
+          </td>
+          <td class="text-center">
+            <div class="fw-semibold">${allocationPercent}</div>
+          </td>
+          <td class="text-center">
+            <div class="small">${hoursText}</div>
+          </td>
+          <td>
+            <div class="small">${datesText}</div>
+          </td>
+          <td>${statusPill(assignment.status)}</td>
+          <td>
+            <div class="btn-group btn-group-sm">
+              <button class="btn btn-outline-primary" onclick="editAssignment(${assignment.assignment_id})" title="Edit">
+                <i class="fas fa-edit"></i>
+              </button>
+              <button class="btn btn-outline-danger" onclick="cancelAssignment(${assignment.assignment_id})" title="Cancel">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+      `);
+    });
+  }
+
+  function bindAssignmentControls() {
+    const filterSelect = document.getElementById('assignment-filter');
+    const statusSelect = document.getElementById('assignment-status');
+    const refreshBtn = document.getElementById('assignments-refresh');
+
+    if (filterSelect) {
+      filterSelect.addEventListener('change', () => {
+        const filter = filterSelect.value;
+        const status = statusSelect?.value || 'assigned';
+        loadAssignments(filter, status);
+      });
+    }
+
+    if (statusSelect) {
+      statusSelect.addEventListener('change', () => {
+        const filter = filterSelect?.value || 'all';
+        const status = statusSelect.value;
+        loadAssignments(filter, status);
+      });
+    }
+
+    if (refreshBtn) {
+      refreshBtn.addEventListener('click', () => {
+        const filter = filterSelect?.value || 'all';
+        const status = statusSelect?.value || 'assigned';
+        loadAssignments(filter, status);
+      });
+    }
+  }
+
+  function editAssignment(assignmentId) {
+    showToast('Edit Assignment', `Assignment ID: ${assignmentId}`, 'info');
+    // TODO: Implement edit functionality
+  }
+
+  function cancelAssignment(assignmentId) {
+    if (confirm('Are you sure you want to cancel this assignment?')) {
+      showToast('Cancel Assignment', `Assignment ID: ${assignmentId}`, 'warning');
+      // TODO: Implement cancel functionality
     }
   }
 
@@ -459,6 +716,9 @@
     const underList = document.getElementById('underutilized-list');
     const overList = document.getElementById('overloaded-list');
     const latest = document.getElementById('utilization-latest');
+    const underCount = document.getElementById('underutilized-count');
+    const overCount = document.getElementById('overloaded-count');
+    
     if (latest && data.latest_date) latest.textContent = `Latest snapshot: ${data.latest_date}`;
     if (!underList || !overList) return;
 
@@ -475,42 +735,106 @@
       ...(data.equipment?.critical || []).map((e) => ({ type: 'equipment', ...e })),
     ];
 
-    underList.innerHTML = '';
-    overList.innerHTML = '';
+    // Store full lists for pagination
+    window.utilizationData = {
+      underutilized: underItems,
+      overloaded: overItems
+    };
 
-    if (!underItems.length) {
-      underList.innerHTML = '<div class="list-group-item text-muted">No available capacity detected.</div>';
-    } else {
-      underItems.forEach((item) => {
-        underList.insertAdjacentHTML(
-          'beforeend',
-          `<div class="list-group-item d-flex justify-content-between">
-            <div>
-              <strong>${findResourceName(item.type, item.resource_id)}</strong>
-              <div class="text-muted">${item.type}</div>
-            </div>
-            <span class="utilization-pill util-underutilized">${percentFmt(item.utilization_percentage)} · ${item.workload_level}</span>
-          </div>`
-        );
-      });
+    // Initialize pagination state
+    if (!window.utilizationPagination) {
+      window.utilizationPagination = {
+        underutilized: { page: 1, pageSize: 5 },
+        overloaded: { page: 1, pageSize: 5 }
+      };
     }
 
-    if (!overItems.length) {
-      overList.innerHTML = '<div class="list-group-item text-muted">No overloaded resources.</div>';
-    } else {
-      overItems.forEach((item) => {
-        overList.insertAdjacentHTML(
-          'beforeend',
-          `<div class="list-group-item d-flex justify-content-between">
-            <div>
-              <strong>${findResourceName(item.type, item.resource_id)}</strong>
-              <div class="text-muted">${item.type}</div>
-            </div>
-            <span class="utilization-pill ${item.workload_level === 'critical' ? 'util-critical' : 'util-overloaded'}">${percentFmt(item.utilization_percentage)} · ${item.workload_level}</span>
-          </div>`
-        );
-      });
+    // Render paginated lists
+    renderPaginatedList('underutilized');
+    renderPaginatedList('overloaded');
+    
+    // Update counts
+    if (underCount) underCount.textContent = `${underItems.length} items`;
+    if (overCount) overCount.textContent = `${overItems.length} items`;
+    
+    // Bind pagination controls
+    bindUtilizationPagination();
+  }
+
+  function renderPaginatedList(type) {
+    const list = document.getElementById(`${type}-list`);
+    const pagination = window.utilizationPagination[type];
+    const items = window.utilizationData[type];
+    
+    if (!list || !items) return;
+
+    const startIndex = (pagination.page - 1) * pagination.pageSize;
+    const endIndex = startIndex + pagination.pageSize;
+    const pageItems = items.slice(startIndex, endIndex);
+
+    list.innerHTML = '';
+    
+    if (!pageItems.length) {
+      list.innerHTML = '<div class="list-group-item text-muted">No items found.</div>';
+      return;
     }
+
+    pageItems.forEach((item) => {
+      list.insertAdjacentHTML(
+        'beforeend',
+        `<div class="list-group-item d-flex justify-content-between">
+          <div>
+            <strong>${findResourceName(item.type, item.resource_id)}</strong>
+            <div class="text-muted">${item.type}</div>
+          </div>
+          <span class="utilization-pill ${item.workload_level === 'critical' ? 'util-critical' : item.workload_level === 'overloaded' ? 'util-overloaded' : item.workload_level === 'optimal' ? 'util-optimal' : 'util-underutilized'}">${percentFmt(item.utilization_percentage)} · ${item.workload_level}</span>
+        </div>`
+      );
+    });
+
+    // Update pagination buttons
+    updatePaginationButtons(type);
+  }
+
+  function updatePaginationButtons(type) {
+    const pagination = window.utilizationPagination[type];
+    const items = window.utilizationData[type];
+    const totalPages = Math.ceil(items.length / pagination.pageSize);
+    
+    const prevBtn = document.getElementById(`${type}-prev`);
+    const nextBtn = document.getElementById(`${type}-next`);
+    
+    if (prevBtn) prevBtn.disabled = pagination.page <= 1;
+    if (nextBtn) nextBtn.disabled = pagination.page >= totalPages;
+  }
+
+  function bindUtilizationPagination() {
+    ['underutilized', 'overloaded'].forEach(type => {
+      const prevBtn = document.getElementById(`${type}-prev`);
+      const nextBtn = document.getElementById(`${type}-next`);
+      
+      if (prevBtn) {
+        prevBtn.onclick = () => {
+          if (window.utilizationPagination[type].page > 1) {
+            window.utilizationPagination[type].page--;
+            renderPaginatedList(type);
+          }
+        };
+      }
+      
+      if (nextBtn) {
+        nextBtn.onclick = () => {
+          const pagination = window.utilizationPagination[type];
+          const items = window.utilizationData[type];
+          const totalPages = Math.ceil(items.length / pagination.pageSize);
+          
+          if (pagination.page < totalPages) {
+            pagination.page++;
+            renderPaginatedList(type);
+          }
+        };
+      }
+    });
   }
 
   function bindAssignmentForm() {
@@ -568,6 +892,29 @@
           return;
         }
 
+        // Additional client-side validation
+        const allocationPercentage = Number(document.getElementById('assign-percentage')?.value || 0);
+        const allocatedHours = Number(document.getElementById('assign-hours')?.value || 0);
+        
+        if (allocationPercentage < 1 || allocationPercentage > 150) {
+          showToast('Invalid allocation', 'Allocation percentage must be between 1 and 150', 'warning');
+          return;
+        }
+        
+        if (allocatedHours < 0.1) {
+          showToast('Invalid hours', 'Allocated hours must be at least 0.1', 'warning');
+          return;
+        }
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const startDateObj = new Date(start_date);
+        
+        if (startDateObj < today) {
+          showToast('Date error', 'Start date cannot be in the past', 'warning');
+          return;
+        }
+
         submitAssignment({
           project_id: projectId,
           task_id: taskId,
@@ -591,7 +938,6 @@
         body: JSON.stringify(payload),
       });
       showToast('Assigned', 'Resource added to task', 'success');
-      loadAlerts();
       loadTasks(payload.project_id);
       loadUtilization();
     } catch (err) {
@@ -614,7 +960,6 @@
 
   function bindRefreshButtons() {
     const refreshBtn = document.getElementById('refresh-btn');
-    const alertsRefresh = document.getElementById('alerts-refresh');
     const assignRefresh = document.getElementById('assign-refresh');
     if (refreshBtn) {
       refreshBtn.addEventListener('click', () => {
@@ -622,7 +967,6 @@
         loadAll();
       });
     }
-    if (alertsRefresh) alertsRefresh.addEventListener('click', loadAlerts);
     if (assignRefresh) assignRefresh.addEventListener('click', () => {
       const projectSelect = document.getElementById('assign-project');
       const projectId = projectSelect ? Number(projectSelect.value) : 0;
@@ -632,20 +976,20 @@
 
   function loadAll() {
     loadSummary();
-    loadAlerts();
     loadEmployees();
     loadEquipment();
     loadProjects();
     loadTasks();
     loadBudgets();
     loadUtilization();
+    loadAssignments();
   }
 
   document.addEventListener('DOMContentLoaded', () => {
     bindSearchInputs();
     bindRefreshButtons();
     bindAssignmentForm();
+    bindAssignmentControls();
     loadAll();
-    setInterval(loadAlerts, 20000);
   });
 })();

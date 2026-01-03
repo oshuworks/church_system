@@ -40,7 +40,18 @@ SELECT
     e.status,
     ru.utilization_percentage AS latest_utilization,
     ru.workload_level,
-    ru.date AS utilization_date
+    ru.date AS utilization_date,
+    (SELECT COUNT(*) 
+     FROM task_assignments ta 
+     WHERE ta.resource_id = e.employee_id 
+     AND ta.assignment_type = 'employee' 
+     AND ta.status = 'assigned') as current_assignments,
+    (SELECT GROUP_CONCAT(DISTINCT p.project_name SEPARATOR ', ')
+     FROM task_assignments ta
+     JOIN projects p ON p.project_id = ta.project_id
+     WHERE ta.resource_id = e.employee_id 
+     AND ta.assignment_type = 'employee' 
+     AND ta.status = 'assigned') as assigned_projects
 FROM employees e
 LEFT JOIN resource_utilization ru
     ON ru.resource_type = 'employee'

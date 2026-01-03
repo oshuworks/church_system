@@ -61,7 +61,9 @@ if ($method === 'GET') {
 }
 
 if ($method === 'POST') {
+    // Get sanitized input from bootstrap
     $input = json_decode(file_get_contents('php://input'), true) ?? [];
+    $input = sanitizeInput($input);
 
     $required = ['project_id', 'task_id', 'assignment_type', 'resource_id', 'allocation_percentage', 'allocated_hours', 'start_date', 'end_date'];
     foreach ($required as $field) {
@@ -76,9 +78,41 @@ if ($method === 'POST') {
     $resourceId = (int) $input['resource_id'];
     $allocationPercentage = (float) $input['allocation_percentage'];
     $allocatedHours = (float) $input['allocated_hours'];
-    $startDate = $input['start_date'];
-    $endDate = $input['end_date'];
+    $startDate = trim($input['start_date']);
+    $endDate = trim($input['end_date']);
     $notes = isset($input['notes']) ? trim($input['notes']) : null;
+
+    // Validate allocation percentage range
+    if ($allocationPercentage < 1 || $allocationPercentage > 150) {
+        respond(['error' => 'Allocation percentage must be between 1 and 150'], 400);
+    }
+
+    // Validate allocated hours
+    if ($allocatedHours < 0.1) {
+        respond(['error' => 'Allocated hours must be at least 0.1'], 400);
+    }
+
+    // Validate date format and range
+    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $startDate) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $endDate)) {
+        respond(['error' => 'Invalid date format. Use YYYY-MM-DD'], 400);
+    }
+
+    $startTimestamp = strtotime($startDate);
+    $endTimestamp = strtotime($endDate);
+    $todayTimestamp = strtotime(date('Y-m-d'));
+
+    if ($startTimestamp < $todayTimestamp - 86400) {
+        respond(['error' => 'Start date cannot be in the past'], 400);
+    }
+
+    if ($startTimestamp > $endTimestamp) {
+        respond(['error' => 'Start date must be before or equal to end date'], 400);
+    }
+
+    // Limit assignment duration to 1 year
+    if (($endTimestamp - $startTimestamp) > 365 * 86400) {
+        respond(['error' => 'Assignment duration cannot exceed 1 year'], 400);
+    }
 
     if (!in_array($assignmentType, ['employee', 'equipment', 'budget'], true)) {
         respond(['error' => 'Invalid assignment_type'], 400);

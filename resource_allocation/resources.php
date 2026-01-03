@@ -23,7 +23,6 @@ $activePage = 'resources';
       </div>
       <div class="col-md-4 text-md-end mt-3 mt-md-0">
         <button class="btn btn-primary me-2" id="refresh-btn"><i class="fas fa-rotate me-1"></i>Refresh</button>
-        <span class="badge bg-light text-dark">Live data from ERP</span>
       </div>
     </section>
 
@@ -68,15 +67,15 @@ $activePage = 'resources';
         <div class="card shadow-sm h-100">
           <div class="card-body">
             <div class="d-flex align-items-center justify-content-between mb-2">
-              <span class="text-uppercase text-muted small">Alerts</span>
-              <i class="fas fa-bell text-danger"></i>
+              <span class="text-uppercase text-muted small">Utilization</span>
+              <i class="fas fa-chart-pie text-info"></i>
             </div>
-            <h3 class="fw-bold mb-1" id="alerts-total">--</h3>
+            <h3 class="fw-bold mb-1" id="utilization-total">--</h3>
             <p class="small text-muted mb-0">
-              <span class="badge bg-danger" id="alerts-critical">0</span>
-              <span class="badge bg-warning text-dark" id="alerts-high">0</span>
-              <span class="badge bg-info text-dark" id="alerts-medium">0</span>
-              <span class="badge bg-secondary" id="alerts-low">0</span>
+              <span class="badge bg-primary" id="utilization-under">0</span>
+              <span class="badge bg-success" id="utilization-optimal">0</span>
+              <span class="badge bg-warning text-dark" id="utilization-over">0</span>
+              <span class="badge bg-danger" id="utilization-critical">0</span>
             </p>
           </div>
         </div>
@@ -90,7 +89,6 @@ $activePage = 'resources';
             <h5 class="mb-0">Assign Resources to Tasks</h5>
             <small class="text-muted">Keep teams balanced across projects.</small>
           </div>
-          <button class="btn btn-outline-secondary btn-sm" id="assign-refresh"><i class="fas fa-sync me-1"></i>Reload options</button>
         </div>
 
         <form id="assignment-form" class="row g-3">
@@ -142,20 +140,7 @@ $activePage = 'resources';
       </div>
     </section>
 
-    <section class="card shadow-sm mb-4">
-      <div class="card-body">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <div>
-            <h5 class="mb-0">Active Alerts</h5>
-            <small class="text-muted">Critical and high alerts are prioritized.</small>
-          </div>
-        <button class="btn btn-outline-primary btn-sm" id="alerts-refresh"><i class="fas fa-sync me-1"></i>Reload</button>
-        </div>
-        <div id="alerts-empty" class="text-muted">No active alerts.</div>
-        <div class="list-group" id="alerts-list"></div>
-      </div>
-    </section>
-
+    
     <section class="card shadow-sm mt-4">
       <div class="card-body">
         <div class="d-flex justify-content-between align-items-center mb-3">
@@ -163,7 +148,6 @@ $activePage = 'resources';
             <h5 class="mb-0">Utilization & Balancing</h5>
             <small class="text-muted">Spot underutilized resources and relieve overloaded ones.</small>
           </div>
-          <span class="badge bg-light text-dark" id="utilization-latest"></span>
         </div>
         <div class="row">
           <div class="col-md-6 mb-3">
@@ -171,16 +155,88 @@ $activePage = 'resources';
             <div class="list-group small" id="underutilized-list">
               <div class="list-group-item text-muted">Loading...</div>
             </div>
+            <div class="d-flex justify-content-between align-items-center mt-2">
+              <small class="text-muted" id="underutilized-count">0 items</small>
+              <div class="btn-group btn-group-sm">
+                <button class="btn btn-outline-secondary" id="underutilized-prev" disabled>
+                  <i class="fas fa-chevron-left"></i>
+                </button>
+                <button class="btn btn-outline-secondary" id="underutilized-next" disabled>
+                  <i class="fas fa-chevron-right"></i>
+                </button>
+              </div>
+            </div>
           </div>
           <div class="col-md-6 mb-3">
             <h6 class="text-danger">Overloaded / Critical</h6>
             <div class="list-group small" id="overloaded-list">
               <div class="list-group-item text-muted">Loading...</div>
             </div>
+            <div class="d-flex justify-content-between align-items-center mt-2">
+              <small class="text-muted" id="overloaded-count">0 items</small>
+              <div class="btn-group btn-group-sm">
+                <button class="btn btn-outline-secondary" id="overloaded-prev" disabled>
+                  <i class="fas fa-chevron-left"></i>
+                </button>
+                <button class="btn btn-outline-secondary" id="overloaded-next" disabled>
+                  <i class="fas fa-chevron-right"></i>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </section>
+
+    <br>
+
+    <section class="card shadow-sm mb-4">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <div>
+            <h5 class="mb-0">Resource Assignments</h5>
+            <small class="text-muted">Detailed view of all current resource allocations</small>
+          </div>
+          <div>
+            <select class="form-select form-select-sm d-inline-block w-auto me-2" id="assignment-filter">
+              <option value="all">All Assignments</option>
+              <option value="employee">Employees</option>
+              <option value="equipment">Equipment</option>
+              <option value="budget">Budgets</option>
+            </select>
+            <select class="form-select form-select-sm d-inline-block w-auto me-2" id="assignment-status">
+              <option value="assigned">Active</option>
+              <option value="completed">Completed</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+            <button class="btn btn-outline-primary btn-sm" id="assignments-refresh"><i class="fas fa-sync me-1"></i>Refresh</button>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead>
+              <tr>
+                <th>Resource</th>
+                <th>Type</th>
+                <th>Project</th>
+                <th>Task</th>
+                <th class="text-center">Allocation</th>
+                <th class="text-center">Hours</th>
+                <th>Dates</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="assignments-list">
+              <tr><td colspan="9" class="text-center text-muted py-4">Loading assignments...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    
 
     <section class="card shadow-sm">
       <div class="card-body">
@@ -213,14 +269,26 @@ $activePage = 'resources';
                     <th>Role</th>
                     <th>Department</th>
                     <th>Status</th>
+                    <th class="text-center">Current Assignments</th>
                     <th class="text-center">Utilization</th>
                     <th class="text-end">Rate</th>
                   </tr>
                 </thead>
                 <tbody id="employees-body">
-                  <tr><td colspan="6" class="text-center text-muted py-4">Loading employees...</td></tr>
+                  <tr><td colspan="7" class="text-center text-muted py-4">Loading employees...</td></tr>
                 </tbody>
               </table>
+            </div>
+            <div class="d-flex justify-content-between align-items-center mt-2">
+              <small class="text-muted" id="employees-count">0 employees</small>
+              <div class="btn-group btn-group-sm">
+                <button class="btn btn-outline-secondary" id="employees-prev" disabled>
+                  <i class="fas fa-chevron-left"></i>
+                </button>
+                <button class="btn btn-outline-secondary" id="employees-next" disabled>
+                  <i class="fas fa-chevron-right"></i>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -237,14 +305,26 @@ $activePage = 'resources';
                     <th>Type</th>
                     <th>Location</th>
                     <th>Status</th>
+                    <th class="text-center">Current Assignments</th>
                     <th class="text-center">Utilization</th>
                     <th class="text-end">Hourly Rate</th>
                   </tr>
                 </thead>
                 <tbody id="equipment-body">
-                  <tr><td colspan="6" class="text-center text-muted py-4">Loading equipment...</td></tr>
+                  <tr><td colspan="7" class="text-center text-muted py-4">Loading equipment...</td></tr>
                 </tbody>
               </table>
+            </div>
+            <div class="d-flex justify-content-between align-items-center mt-2">
+              <small class="text-muted" id="equipment-count">0 equipment</small>
+              <div class="btn-group btn-group-sm">
+                <button class="btn btn-outline-secondary" id="equipment-prev" disabled>
+                  <i class="fas fa-chevron-left"></i>
+                </button>
+                <button class="btn btn-outline-secondary" id="equipment-next" disabled>
+                  <i class="fas fa-chevron-right"></i>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -262,13 +342,25 @@ $activePage = 'resources';
                     <th>Priority</th>
                     <th>Dates</th>
                     <th class="text-center">Progress</th>
+                    <th class="text-center">Resources</th>
                     <th class="text-end">Budget</th>
                   </tr>
                 </thead>
                 <tbody id="projects-body">
-                  <tr><td colspan="6" class="text-center text-muted py-4">Loading projects...</td></tr>
+                  <tr><td colspan="7" class="text-center text-muted py-4">Loading projects...</td></tr>
                 </tbody>
               </table>
+            </div>
+            <div class="d-flex justify-content-between align-items-center mt-2">
+              <small class="text-muted" id="projects-count">0 projects</small>
+              <div class="btn-group btn-group-sm">
+                <button class="btn btn-outline-secondary" id="projects-prev" disabled>
+                  <i class="fas fa-chevron-left"></i>
+                </button>
+                <button class="btn btn-outline-secondary" id="projects-next" disabled>
+                  <i class="fas fa-chevron-right"></i>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -287,12 +379,24 @@ $activePage = 'resources';
                     <th>Priority</th>
                     <th>Dates</th>
                     <th class="text-center">Progress</th>
+                    <th class="text-center">Assigned Resources</th>
                   </tr>
                 </thead>
                 <tbody id="tasks-body">
-                  <tr><td colspan="6" class="text-center text-muted py-4">Loading tasks...</td></tr>
+                  <tr><td colspan="7" class="text-center text-muted py-4">Loading tasks...</td></tr>
                 </tbody>
               </table>
+            </div>
+            <div class="d-flex justify-content-between align-items-center mt-2">
+              <small class="text-muted" id="tasks-count">0 tasks</small>
+              <div class="btn-group btn-group-sm">
+                <button class="btn btn-outline-secondary" id="tasks-prev" disabled>
+                  <i class="fas fa-chevron-left"></i>
+                </button>
+                <button class="btn btn-outline-secondary" id="tasks-next" disabled>
+                  <i class="fas fa-chevron-right"></i>
+                </button>
+              </div>
             </div>
           </div>
         </div>
