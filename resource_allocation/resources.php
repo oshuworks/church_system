@@ -201,7 +201,7 @@ $activePage = 'resources';
               <option value="budget">Budgets</option>
             </select>
             <select class="form-select form-select-sm d-inline-block w-auto me-2" id="assignment-status">
-              <option value="assigned">Active</option>
+              <option value="assigned">Assigned</option>
               <option value="completed">Completed</option>
               <option value="cancelled">Cancelled</option>
             </select>

@@ -28,7 +28,7 @@ if ($method === 'GET') {
         $types .= 's';
         $params[] = $assignmentType;
     }
-    if (!empty($status) && $status !== 'assigned') {
+    if (!empty($status)) {
         $conditions[] = "ta.status = ?";
         $types .= 's';
         $params[] = $status;

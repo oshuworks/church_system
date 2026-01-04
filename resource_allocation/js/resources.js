@@ -534,7 +534,7 @@
     try {
       const queryParams = new URLSearchParams();
       if (filter !== 'all') queryParams.append('assignment_type', filter);
-      if (status !== 'assigned') queryParams.append('status', status);
+      queryParams.append('status', status);
       
       const data = await fetchJSON(`assignments.php${queryParams.toString() ? '?' + queryParams.toString() : ''}`);
       renderAssignments(data.assignments || []);
