@@ -14,8 +14,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
     
     try {
-        // Fetch project details
-        $stmt = $conn->prepare("SELECT * FROM projects WHERE project_id = ?");
+        // Fetch project details (map DB columns to API fields for backward compatibility)
+        $stmt = $conn->prepare("SELECT project_id, project_name AS name, project_description AS description, start_date, end_date, status, priority, budget_allocated AS budget, created_at, updated_at FROM projects WHERE project_id = ?");
         $stmt->bind_param("i", $project_id);
         $stmt->execute();
         $result = $stmt->get_result();
@@ -29,15 +29,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         
         // Fetch tasks with dependency information
         $stmt = $conn->prepare("
-            SELECT t.*, 
-                   dt.name as dependency_task_name,
+            SELECT t.task_id, t.task_name AS name, t.task_description AS description, t.start_date, t.end_date, t.estimated_hours, t.actual_hours, t.status, t.priority, t.progress_percentage AS progress_percent, t.parent_task_id,
+                   dt.task_name as dependency_task_name,
                    CASE 
-                       WHEN t.progress_percent = 100 THEN 3
-                       WHEN t.end_date < CURDATE() AND t.progress_percent < 100 THEN 1
+                       WHEN t.progress_percentage = 100 THEN 3
+                       WHEN t.end_date < CURDATE() AND t.progress_percentage < 100 THEN 1
                        ELSE 2
                    END as sort_priority,
                    CASE 
-                       WHEN t.progress_percent = 100 THEN 
+                       WHEN t.progress_percentage = 100 THEN 
                            COALESCE(-TO_DAYS(t.end_date), 0)
                        ELSE 
                            COALESCE(TO_DAYS(t.end_date), 0)
@@ -49,7 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 sort_priority ASC,
                 sort_date ASC,
                 t.start_date ASC,
-                t.name ASC
+                t.task_name ASC
         ");
         $stmt->bind_param("i", $project_id);
         $stmt->execute();
@@ -100,7 +100,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $conn->begin_transaction();
         
         // Insert project
-        $stmt = $conn->prepare("INSERT INTO projects (name, description, start_date, end_date, budget) VALUES (?, ?, ?, ?, ?)");
+        // Map API fields to DB column names
+        $stmt = $conn->prepare("INSERT INTO projects (project_name, project_description, start_date, end_date, budget_allocated) VALUES (?, ?, ?, ?, ?)");
         $stmt->bind_param("ssssd", $name, $description, $start_date, $end_date, $budget);
         
         if (!$stmt->execute()) {
@@ -126,7 +127,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             // Insert main tasks first
             foreach ($main_tasks as $index => $task) {
-                $task_stmt = $conn->prepare("INSERT INTO tasks (project_id, name, description, start_date, end_date, progress_percent) VALUES (?, ?, ?, ?, ?, 0)");
+                $task_stmt = $conn->prepare("INSERT INTO tasks (project_id, task_name, task_description, start_date, end_date, progress_percentage) VALUES (?, ?, ?, ?, ?, 0)");
                 $task_stmt->bind_param("issss", $project_id, $task['name'], $task['description'], $task['start_date'], $task['end_date']);
                 if ($task_stmt->execute()) {
                     $task_ids[$index] = $conn->insert_id;
@@ -139,7 +140,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $parent_index = $task['dependency_task_index'];
                 $dependency_task_id = isset($task_ids[$parent_index]) ? $task_ids[$parent_index] : null;
                 
-                $task_stmt = $conn->prepare("INSERT INTO tasks (project_id, name, description, start_date, end_date, dependency_task_id, progress_percent) VALUES (?, ?, ?, ?, ?, ?, 0)");
+                $task_stmt = $conn->prepare("INSERT INTO tasks (project_id, task_name, task_description, start_date, end_date, dependency_task_id, progress_percentage) VALUES (?, ?, ?, ?, ?, ?, 0)");
                 $task_stmt->bind_param("issssi", $project_id, $task['name'], $task['description'], $task['start_date'], $task['end_date'], $dependency_task_id);
                 if ($task_stmt->execute()) {
                     $task_ids[$index] = $conn->insert_id;

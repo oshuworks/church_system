@@ -15,9 +15,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     
     try {
         $stmt = $conn->prepare("
-            SELECT t.*, 
-                   p.name as project_name,
-                   dt.name as dependency_task_name
+            SELECT t.task_id, t.task_name AS name, t.task_description AS description, t.start_date, t.end_date, t.estimated_hours, t.actual_hours, t.status, t.priority, t.progress_percentage AS progress_percent,
+                   p.project_name as project_name,
+                   dt.task_name as dependency_task_name
             FROM tasks t
             LEFT JOIN projects p ON t.project_id = p.project_id
             LEFT JOIN tasks dt ON t.dependency_task_id = dt.task_id
@@ -58,7 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $start_date = $data['start_date'] ?? null;
     $end_date = $data['end_date'] ?? null;
     $dependency_task_id = $data['dependency_task_id'] ?? null;
-    $progress_percent = $data['progress_percent'] ?? 0;
+    $progress_percentage = floatval($data['progress_percent'] ?? 0);
     
     if (!$name || !$project_id) {
         http_response_code(400);
@@ -89,10 +89,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     try {
         $stmt = $conn->prepare("
-            INSERT INTO tasks (name, description, project_id, start_date, end_date, dependency_task_id, progress_percent) 
+            INSERT INTO tasks (task_name, task_description, project_id, start_date, end_date, dependency_task_id, progress_percentage) 
             VALUES (?, ?, ?, ?, ?, ?, ?)
         ");
-        $stmt->bind_param("ssissii", $name, $description, $project_id, $start_date, $end_date, $dependency_task_id, $progress_percent);
+        $stmt->bind_param("ssissid", $name, $description, $project_id, $start_date, $end_date, $dependency_task_id, $progress_percentage);
         
         if ($stmt->execute()) {
             echo json_encode(['success' => true, 'task_id' => $conn->insert_id, 'message' => 'Task created successfully']);
@@ -119,7 +119,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
     $start_date = $data['start_date'] ?? null;
     $end_date = $data['end_date'] ?? null;
     $dependency_task_id = $data['dependency_task_id'] ?? null;
-    $progress_percent = $data['progress_percent'] ?? null;
+    $progress_percentage = isset($data['progress_percent']) ? floatval($data['progress_percent']) : null;
     
     if (!$task_id || !$name) {
         http_response_code(400);
@@ -201,10 +201,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
             $params[] = $dependency_task_id;
             $types .= 'i';
         }
-        if ($progress_percent !== null) {
-            $update_fields[] = "progress_percent = ?";
-            $params[] = $progress_percent;
-            $types .= 'i';
+        if ($progress_percentage !== null) {
+            $update_fields[] = "progress_percentage = ?";
+            $params[] = $progress_percentage;
+            $types .= 'd';
         }
         
         if (empty($update_fields)) {

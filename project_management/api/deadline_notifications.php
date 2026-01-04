@@ -15,14 +15,14 @@ function checkAndCreateDeadlineNotifications($conn) {
     try {
         // Check for due projects (end_date = today, not completed)
         $stmt = $conn->prepare("
-            SELECT p.project_id, p.name, p.end_date,
-                   COALESCE(SUM(CASE WHEN t.progress_percent = 100 THEN 1 ELSE 0 END), 0) as completed_tasks,
+            SELECT p.project_id, p.project_name as name, p.end_date,
+                   COALESCE(SUM(CASE WHEN t.progress_percentage = 100 THEN 1 ELSE 0 END), 0) as completed_tasks,
                    COUNT(t.task_id) as total_tasks
             FROM projects p
             LEFT JOIN tasks t ON p.project_id = t.project_id
             WHERE p.end_date = ? 
             AND p.end_date IS NOT NULL
-            GROUP BY p.project_id, p.name, p.end_date
+            GROUP BY p.project_id, p.project_name, p.end_date
             HAVING (total_tasks = 0 OR completed_tasks < total_tasks)
         ");
         $stmt->bind_param("s", $today);
@@ -32,17 +32,17 @@ function checkAndCreateDeadlineNotifications($conn) {
         foreach ($dueProjects as $project) {
             // Check if notification already exists for today (prevent duplicates)
             $checkStmt = $conn->prepare("
-                SELECT notification_id FROM resource_notifications 
+                SELECT alert_id FROM resource_alerts 
                 WHERE project_id = ? 
-                AND notification_type = 'project_due_date' 
+                AND alert_type = 'project_due_date' 
                 AND DATE(created_at) = ?
             ");
             $checkStmt->bind_param("is", $project['project_id'], $today);
             $checkStmt->execute();
             if ($checkStmt->get_result()->num_rows == 0) {
                 $insertStmt = $conn->prepare("
-                    INSERT INTO resource_notifications (project_id, notification_type, message, is_read)
-                    VALUES (?, 'project_due_date', ?, FALSE)
+                    INSERT INTO resource_alerts (alert_type, resource_type, resource_id, project_id, severity, message, status)
+                    VALUES ('project_due_date', 'budget', 0, ?, 'medium', ?, 'active')
                 ");
                 $message = "⚠️ Project '{$project['name']}' is due today! Please complete all tasks before the deadline.";
                 $insertStmt->bind_param("is", $project['project_id'], $message);
@@ -53,14 +53,14 @@ function checkAndCreateDeadlineNotifications($conn) {
         
         // Check for near deadline projects (end_date = today + 1 day, not completed)
         $stmt = $conn->prepare("
-            SELECT p.project_id, p.name, p.end_date,
-                   COALESCE(SUM(CASE WHEN t.progress_percent = 100 THEN 1 ELSE 0 END), 0) as completed_tasks,
+            SELECT p.project_id, p.project_name as name, p.end_date,
+                   COALESCE(SUM(CASE WHEN t.progress_percentage = 100 THEN 1 ELSE 0 END), 0) as completed_tasks,
                    COUNT(t.task_id) as total_tasks
             FROM projects p
             LEFT JOIN tasks t ON p.project_id = t.project_id
             WHERE p.end_date = ? 
             AND p.end_date IS NOT NULL
-            GROUP BY p.project_id, p.name, p.end_date
+            GROUP BY p.project_id, p.project_name, p.end_date
             HAVING (total_tasks = 0 OR completed_tasks < total_tasks)
         ");
         $stmt->bind_param("s", $nearDeadlineDate);
@@ -70,17 +70,17 @@ function checkAndCreateDeadlineNotifications($conn) {
         foreach ($nearDeadlineProjects as $project) {
             // Check if notification already exists for today (prevent duplicates)
             $checkStmt = $conn->prepare("
-                SELECT notification_id FROM resource_notifications 
+                SELECT alert_id FROM resource_alerts 
                 WHERE project_id = ? 
-                AND notification_type = 'project_near_deadline' 
+                AND alert_type = 'project_near_deadline' 
                 AND DATE(created_at) = ?
             ");
             $checkStmt->bind_param("is", $project['project_id'], $today);
             $checkStmt->execute();
             if ($checkStmt->get_result()->num_rows == 0) {
                 $insertStmt = $conn->prepare("
-                    INSERT INTO resource_notifications (project_id, notification_type, message, is_read)
-                    VALUES (?, 'project_near_deadline', ?, FALSE)
+                    INSERT INTO resource_alerts (alert_type, resource_type, resource_id, project_id, severity, message, status)
+                    VALUES ('project_near_deadline', 'budget', 0, ?, 'medium', ?, 'active')
                 ");
                 $daysText = NEAR_DEADLINE_DAYS == 1 ? '1 day' : NEAR_DEADLINE_DAYS . ' days';
                 $message = "⏰ Project '{$project['name']}' deadline is approaching! Due in ".$daysText." on ".date('M d, Y', strtotime($project['end_date'])).".";
@@ -92,12 +92,12 @@ function checkAndCreateDeadlineNotifications($conn) {
         
         // Check for due tasks (end_date = today, not completed)
         $stmt = $conn->prepare("
-            SELECT t.task_id, t.name, t.end_date, t.parent_task_id, p.name as project_name
+            SELECT t.task_id, t.task_name as name, t.end_date, t.parent_task_id, p.project_name as project_name
             FROM tasks t
             LEFT JOIN projects p ON t.project_id = p.project_id
             WHERE t.end_date = ? 
             AND t.end_date IS NOT NULL
-            AND t.progress_percent < 100
+            AND t.progress_percentage < 100
             AND t.parent_task_id IS NULL
         ");
         $stmt->bind_param("s", $today);
@@ -105,11 +105,11 @@ function checkAndCreateDeadlineNotifications($conn) {
         $dueTasks = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
         
         foreach ($dueTasks as $task) {
-            // Check if notification already exists for today (prevent duplicates)
+            // Check if alert already exists for today (prevent duplicates)
             $checkStmt = $conn->prepare("
-                SELECT notification_id FROM resource_notifications 
+                SELECT alert_id FROM resource_alerts 
                 WHERE project_id = (SELECT project_id FROM tasks WHERE task_id = ?)
-                AND notification_type = 'task_due_date' 
+                AND alert_type = 'task_due_date' 
                 AND message LIKE ?
                 AND DATE(created_at) = ?
             ");
@@ -118,8 +118,8 @@ function checkAndCreateDeadlineNotifications($conn) {
             $checkStmt->execute();
             if ($checkStmt->get_result()->num_rows == 0) {
                 $insertStmt = $conn->prepare("
-                    INSERT INTO resource_notifications (project_id, notification_type, message, is_read)
-                    VALUES (?, 'task_due_date', ?, FALSE)
+                    INSERT INTO resource_alerts (alert_type, resource_type, resource_id, project_id, task_id, severity, message, status)
+                    VALUES ('task_due_date', 'employee', 0, ?, ?, 'medium', ?, 'active')
                 ");
                 $projectIdStmt = $conn->prepare("SELECT project_id FROM tasks WHERE task_id = ?");
                 $projectIdStmt->bind_param("i", $task['task_id']);
@@ -127,20 +127,20 @@ function checkAndCreateDeadlineNotifications($conn) {
                 $projectIdResult = $projectIdStmt->get_result()->fetch_assoc();
                 $projectId = $projectIdResult['project_id'];
                 $message = "⚠️ Task '{$task['name']}' in project '{$task['project_name']}' is due today! Please complete it before the deadline.";
-                $insertStmt->bind_param("is", $projectId, $message);
+                $insertStmt->bind_param("iis", $projectId, $task['task_id'], $message);
                 $insertStmt->execute();
                 $notificationsCreated++;
             }
         }
         
-        // Check for near deadline tasks (end_date = today + 3 days, not completed)
+        // Check for near deadline tasks (end_date = today + X days, not completed)
         $stmt = $conn->prepare("
-            SELECT t.task_id, t.name, t.end_date, t.parent_task_id, p.name as project_name
+            SELECT t.task_id, t.task_name as name, t.end_date, t.parent_task_id, p.project_name as project_name
             FROM tasks t
             LEFT JOIN projects p ON t.project_id = p.project_id
             WHERE t.end_date = ? 
             AND t.end_date IS NOT NULL
-            AND t.progress_percent < 100
+            AND t.progress_percentage < 100
             AND t.parent_task_id IS NULL
         ");
         $stmt->bind_param("s", $nearDeadlineDate);
@@ -148,11 +148,11 @@ function checkAndCreateDeadlineNotifications($conn) {
         $nearDeadlineTasks = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
         
         foreach ($nearDeadlineTasks as $task) {
-            // Check if notification already exists for today (prevent duplicates)
+            // Check if alert already exists for today (prevent duplicates)
             $checkStmt = $conn->prepare("
-                SELECT notification_id FROM resource_notifications 
+                SELECT alert_id FROM resource_alerts 
                 WHERE project_id = (SELECT project_id FROM tasks WHERE task_id = ?)
-                AND notification_type = 'task_near_deadline' 
+                AND alert_type = 'task_near_deadline' 
                 AND message LIKE ?
                 AND DATE(created_at) = ?
             ");
@@ -161,8 +161,8 @@ function checkAndCreateDeadlineNotifications($conn) {
             $checkStmt->execute();
             if ($checkStmt->get_result()->num_rows == 0) {
                 $insertStmt = $conn->prepare("
-                    INSERT INTO resource_notifications (project_id, notification_type, message, is_read)
-                    VALUES (?, 'task_near_deadline', ?, FALSE)
+                    INSERT INTO resource_alerts (alert_type, resource_type, resource_id, project_id, task_id, severity, message, status)
+                    VALUES ('task_near_deadline', 'employee', 0, ?, ?, 'medium', ?, 'active')
                 ");
                 $projectIdStmt = $conn->prepare("SELECT project_id FROM tasks WHERE task_id = ?");
                 $projectIdStmt->bind_param("i", $task['task_id']);
@@ -171,7 +171,7 @@ function checkAndCreateDeadlineNotifications($conn) {
                 $projectId = $projectIdResult['project_id'];
                 $daysText = NEAR_DEADLINE_DAYS == 1 ? '1 day' : NEAR_DEADLINE_DAYS . ' days';
                 $message = "⏰ Task '{$task['name']}' in project '{$task['project_name']}' deadline is approaching! Due in ".$daysText." on ".date('M d, Y', strtotime($task['end_date'])).".";
-                $insertStmt->bind_param("is", $projectId, $message);
+                $insertStmt->bind_param("iis", $projectId, $task['task_id'], $message);
                 $insertStmt->execute();
                 $notificationsCreated++;
             }
@@ -179,13 +179,13 @@ function checkAndCreateDeadlineNotifications($conn) {
         
         // Check for due subtasks (end_date = today, not completed)
         $stmt = $conn->prepare("
-            SELECT t.task_id, t.name, t.end_date, t.parent_task_id, pt.name as parent_task_name, p.name as project_name
+            SELECT t.task_id, t.task_name as name, t.end_date, t.parent_task_id, pt.task_name as parent_task_name, p.project_name as project_name
             FROM tasks t
             LEFT JOIN tasks pt ON t.parent_task_id = pt.task_id
             LEFT JOIN projects p ON t.project_id = p.project_id
             WHERE t.end_date = ? 
             AND t.end_date IS NOT NULL
-            AND t.progress_percent < 100
+            AND t.progress_percentage < 100
             AND t.parent_task_id IS NOT NULL
         ");
         $stmt->bind_param("s", $today);
@@ -193,11 +193,11 @@ function checkAndCreateDeadlineNotifications($conn) {
         $dueSubtasks = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
         
         foreach ($dueSubtasks as $subtask) {
-            // Check if notification already exists for today (prevent duplicates)
+            // Check if alert already exists for today (prevent duplicates)
             $checkStmt = $conn->prepare("
-                SELECT notification_id FROM resource_notifications 
+                SELECT alert_id FROM resource_alerts 
                 WHERE project_id = (SELECT project_id FROM tasks WHERE task_id = ?)
-                AND notification_type = 'subtask_due_date' 
+                AND alert_type = 'subtask_due_date' 
                 AND message LIKE ?
                 AND DATE(created_at) = ?
             ");
@@ -206,8 +206,8 @@ function checkAndCreateDeadlineNotifications($conn) {
             $checkStmt->execute();
             if ($checkStmt->get_result()->num_rows == 0) {
                 $insertStmt = $conn->prepare("
-                    INSERT INTO resource_notifications (project_id, notification_type, message, is_read)
-                    VALUES (?, 'subtask_due_date', ?, FALSE)
+                    INSERT INTO resource_alerts (alert_type, resource_type, resource_id, project_id, task_id, severity, message, status)
+                    VALUES ('subtask_due_date', 'employee', 0, ?, ?, 'medium', ?, 'active')
                 ");
                 $projectIdStmt = $conn->prepare("SELECT project_id FROM tasks WHERE task_id = ?");
                 $projectIdStmt->bind_param("i", $subtask['task_id']);
@@ -215,7 +215,7 @@ function checkAndCreateDeadlineNotifications($conn) {
                 $projectIdResult = $projectIdStmt->get_result()->fetch_assoc();
                 $projectId = $projectIdResult['project_id'];
                 $message = "⚠️ Subtask '{$subtask['name']}' of task '{$subtask['parent_task_name']}' in project '{$subtask['project_name']}' is due today! Please complete it before the deadline.";
-                $insertStmt->bind_param("is", $projectId, $message);
+                $insertStmt->bind_param("iis", $projectId, $subtask['task_id'], $message);
                 $insertStmt->execute();
                 $notificationsCreated++;
             }
@@ -229,7 +229,7 @@ function checkAndCreateDeadlineNotifications($conn) {
             LEFT JOIN projects p ON t.project_id = p.project_id
             WHERE t.end_date = ? 
             AND t.end_date IS NOT NULL
-            AND t.progress_percent < 100
+            AND t.progress_percentage < 100
             AND t.parent_task_id IS NOT NULL
         ");
         $stmt->bind_param("s", $nearDeadlineDate);
@@ -237,11 +237,11 @@ function checkAndCreateDeadlineNotifications($conn) {
         $nearDeadlineSubtasks = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
         
         foreach ($nearDeadlineSubtasks as $subtask) {
-            // Check if notification already exists for today (prevent duplicates)
+            // Check if alert already exists for today (prevent duplicates)
             $checkStmt = $conn->prepare("
-                SELECT notification_id FROM resource_notifications 
+                SELECT alert_id FROM resource_alerts 
                 WHERE project_id = (SELECT project_id FROM tasks WHERE task_id = ?)
-                AND notification_type = 'subtask_near_deadline' 
+                AND alert_type = 'subtask_near_deadline' 
                 AND message LIKE ?
                 AND DATE(created_at) = ?
             ");
@@ -250,8 +250,8 @@ function checkAndCreateDeadlineNotifications($conn) {
             $checkStmt->execute();
             if ($checkStmt->get_result()->num_rows == 0) {
                 $insertStmt = $conn->prepare("
-                    INSERT INTO resource_notifications (project_id, notification_type, message, is_read)
-                    VALUES (?, 'subtask_near_deadline', ?, FALSE)
+                    INSERT INTO resource_alerts (alert_type, resource_type, resource_id, project_id, task_id, severity, message, status)
+                    VALUES ('subtask_near_deadline', 'employee', 0, ?, ?, 'medium', ?, 'active')
                 ");
                 $projectIdStmt = $conn->prepare("SELECT project_id FROM tasks WHERE task_id = ?");
                 $projectIdStmt->bind_param("i", $subtask['task_id']);
@@ -260,7 +260,7 @@ function checkAndCreateDeadlineNotifications($conn) {
                 $projectId = $projectIdResult['project_id'];
                 $daysText = NEAR_DEADLINE_DAYS == 1 ? '1 day' : NEAR_DEADLINE_DAYS . ' days';
                 $message = "⏰ Subtask '{$subtask['name']}' of task '{$subtask['parent_task_name']}' in project '{$subtask['project_name']}' deadline is approaching! Due in ".$daysText." on ".date('M d, Y', strtotime($subtask['end_date'])).".";
-                $insertStmt->bind_param("is", $projectId, $message);
+                $insertStmt->bind_param("iis", $projectId, $subtask['task_id'], $message);
                 $insertStmt->execute();
                 $notificationsCreated++;
             }

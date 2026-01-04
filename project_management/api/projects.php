@@ -7,17 +7,17 @@ header('Content-Type: application/json');
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     try {
         $stmt = $conn->prepare("
-            SELECT p.*, 
+            SELECT p.project_id, p.project_name AS name, p.project_description AS description, p.start_date, p.end_date, p.status, p.priority, p.budget_allocated AS budget, p.created_at, p.updated_at,
                    COUNT(DISTINCT t.task_id) as task_count,
-                   COUNT(DISTINCT CASE WHEN t.progress_percent = 100 THEN t.task_id END) as completed_tasks,
-                   COUNT(DISTINCT CASE WHEN t.end_date < CURDATE() AND t.progress_percent < 100 THEN t.task_id END) as overdue_tasks,
+                   COUNT(DISTINCT CASE WHEN t.progress_percentage = 100 THEN t.task_id END) as completed_tasks,
+                   COUNT(DISTINCT CASE WHEN t.end_date < CURDATE() AND t.progress_percentage < 100 THEN t.task_id END) as overdue_tasks,
                    CASE 
-                       WHEN (COUNT(DISTINCT CASE WHEN t.progress_percent = 100 THEN t.task_id END) = COUNT(DISTINCT t.task_id) AND COUNT(DISTINCT t.task_id) > 0) THEN 3
-                       WHEN (COUNT(DISTINCT CASE WHEN t.end_date < CURDATE() AND t.progress_percent < 100 THEN t.task_id END) > 0) OR (p.end_date < CURDATE() AND COUNT(DISTINCT CASE WHEN t.progress_percent = 100 THEN t.task_id END) < COUNT(DISTINCT t.task_id)) THEN 1
+                       WHEN (COUNT(DISTINCT CASE WHEN t.progress_percentage = 100 THEN t.task_id END) = COUNT(DISTINCT t.task_id) AND COUNT(DISTINCT t.task_id) > 0) THEN 3
+                       WHEN (COUNT(DISTINCT CASE WHEN t.end_date < CURDATE() AND t.progress_percentage < 100 THEN t.task_id END) > 0) OR (p.end_date < CURDATE() AND COUNT(DISTINCT CASE WHEN t.progress_percentage = 100 THEN t.task_id END) < COUNT(DISTINCT t.task_id)) THEN 1
                        ELSE 2
                    END as sort_priority,
                    CASE 
-                       WHEN (COUNT(DISTINCT CASE WHEN t.progress_percent = 100 THEN t.task_id END) = COUNT(DISTINCT t.task_id) AND COUNT(DISTINCT t.task_id) > 0) THEN 
+                       WHEN (COUNT(DISTINCT CASE WHEN t.progress_percentage = 100 THEN t.task_id END) = COUNT(DISTINCT t.task_id) AND COUNT(DISTINCT t.task_id) > 0) THEN 
                            COALESCE(-TO_DAYS(p.end_date), 0)
                        ELSE 
                            COALESCE(TO_DAYS(p.end_date), 0)

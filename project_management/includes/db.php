@@ -39,135 +39,216 @@ function ensureTablesExist($conn) {
     // Check if projects table exists
     $result = $conn->query("SHOW TABLES LIKE 'projects'");
     if ($result->num_rows == 0) {
-        // Create tables in correct order (respecting foreign key dependencies)
-        
-        // 1. Projects (no dependencies)
+        // Create resource-allocation–style schema (compatible with resource_allocation SQL)
+
+        // Projects
         $conn->query("CREATE TABLE IF NOT EXISTS projects (
             project_id INT AUTO_INCREMENT PRIMARY KEY,
-            name VARCHAR(255) NOT NULL,
-            description TEXT,
-            start_date DATE,
-            end_date DATE,
-            budget DECIMAL(15,2),
+            project_name VARCHAR(255) NOT NULL,
+            project_description TEXT,
+            start_date DATE NOT NULL,
+            end_date DATE NOT NULL,
+            status ENUM('planning', 'active', 'on_hold', 'completed', 'cancelled') DEFAULT 'planning',
+            priority ENUM('low', 'medium', 'high', 'critical') DEFAULT 'medium',
+            budget_allocated DECIMAL(15,2) DEFAULT 0.00,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         )");
-        
-        // 2. Resources (no dependencies)
-        $conn->query("CREATE TABLE IF NOT EXISTS resources (
-            resource_id INT AUTO_INCREMENT PRIMARY KEY,
-            name VARCHAR(255) NOT NULL,
-            resource_type ENUM('Human', 'Equipment', 'Financial') NOT NULL,
-            availability DECIMAL(5,2) DEFAULT 100.00,
-            cost_per_unit DECIMAL(10,2) DEFAULT 0.00
+
+        // Employees
+        $conn->query("CREATE TABLE IF NOT EXISTS employees (
+            employee_id INT AUTO_INCREMENT PRIMARY KEY,
+            employee_name VARCHAR(255) NOT NULL,
+            email VARCHAR(255) UNIQUE NOT NULL,
+            role VARCHAR(100) NOT NULL,
+            department VARCHAR(100),
+            skills TEXT,
+            hourly_rate DECIMAL(10,2) DEFAULT 0.00,
+            max_work_hours_per_day DECIMAL(4,2) DEFAULT 8.00,
+            current_workload DECIMAL(5,2) DEFAULT 0.00,
+            utilization_percentage DECIMAL(5,2) DEFAULT 0.00,
+            status ENUM('active', 'inactive', 'on_leave') DEFAULT 'active',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         )");
-        
-        // 3. Tasks (depends on projects)
+
+        // Equipment
+        $conn->query("CREATE TABLE IF NOT EXISTS equipment (
+            equipment_id INT AUTO_INCREMENT PRIMARY KEY,
+            equipment_name VARCHAR(255) NOT NULL,
+            equipment_type VARCHAR(100) NOT NULL,
+            description TEXT,
+            hourly_rate DECIMAL(10,2) DEFAULT 0.00,
+            maintenance_cost DECIMAL(10,2) DEFAULT 0.00,
+            total_capacity_hours DECIMAL(8,2) DEFAULT 0.00,
+            used_hours DECIMAL(8,2) DEFAULT 0.00,
+            utilization_percentage DECIMAL(5,2) DEFAULT 0.00,
+            status ENUM('available', 'in_use', 'maintenance', 'reserved', 'retired') DEFAULT 'available',
+            location VARCHAR(255),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        )");
+
+        // Tasks
         $conn->query("CREATE TABLE IF NOT EXISTS tasks (
             task_id INT AUTO_INCREMENT PRIMARY KEY,
             project_id INT NOT NULL,
-            name VARCHAR(255) NOT NULL,
-            description TEXT,
-            start_date DATE,
-            end_date DATE,
+            task_name VARCHAR(255) NOT NULL,
+            task_description TEXT,
+            start_date DATE NOT NULL,
+            end_date DATE NOT NULL,
+            estimated_hours DECIMAL(8,2) DEFAULT 0.00,
+            actual_hours DECIMAL(8,2) DEFAULT 0.00,
+            status ENUM('not_started', 'in_progress', 'completed', 'blocked', 'cancelled') DEFAULT 'not_started',
+            priority ENUM('low', 'medium', 'high', 'critical') DEFAULT 'medium',
+            progress_percentage DECIMAL(5,2) DEFAULT 0.00,
             dependency_task_id INT DEFAULT NULL,
             parent_task_id INT DEFAULT NULL,
-            progress_percent INT DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             FOREIGN KEY (project_id) REFERENCES projects(project_id) ON DELETE CASCADE,
             FOREIGN KEY (dependency_task_id) REFERENCES tasks(task_id) ON DELETE SET NULL,
             FOREIGN KEY (parent_task_id) REFERENCES tasks(task_id) ON DELETE CASCADE
         )");
-        
-        // 4. Budgets (depends on projects)
-        $conn->query("CREATE TABLE IF NOT EXISTS budgets (
-            budget_id INT AUTO_INCREMENT PRIMARY KEY,
+
+        // Task assignments (keeps compatibility with resource_allocations semantics)
+        $conn->query("CREATE TABLE IF NOT EXISTS task_assignments (
+            assignment_id INT AUTO_INCREMENT PRIMARY KEY,
+            task_id INT NOT NULL,
             project_id INT NOT NULL,
-            description VARCHAR(255),
-            estimated_cost DECIMAL(15,2),
-            actual_cost DECIMAL(15,2) DEFAULT 0.00,
+            assignment_type ENUM('employee', 'equipment', 'budget') NOT NULL,
+            resource_id INT NOT NULL,
+            allocation_percentage DECIMAL(5,2) DEFAULT 100.00,
+            allocated_hours DECIMAL(8,2) DEFAULT 0.00,
+            actual_hours_used DECIMAL(8,2) DEFAULT 0.00,
+            start_date DATE NOT NULL,
+            end_date DATE NOT NULL,
+            status ENUM('assigned', 'in_progress', 'completed', 'cancelled') DEFAULT 'assigned',
+            notes TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            FOREIGN KEY (task_id) REFERENCES tasks(task_id) ON DELETE CASCADE,
             FOREIGN KEY (project_id) REFERENCES projects(project_id) ON DELETE CASCADE
         )");
-        
-        // 5. Resource allocations (depends on tasks and resources)
-        $conn->query("CREATE TABLE IF NOT EXISTS resource_allocations (
-            allocation_id INT AUTO_INCREMENT PRIMARY KEY,
-            task_id INT NOT NULL,
+
+        // Resource utilization
+        $conn->query("CREATE TABLE IF NOT EXISTS resource_utilization (
+            utilization_id INT AUTO_INCREMENT PRIMARY KEY,
+            resource_type ENUM('employee', 'equipment') NOT NULL,
             resource_id INT NOT NULL,
-            allocation_percent DECIMAL(5,2) DEFAULT 0.00,
-            FOREIGN KEY (task_id) REFERENCES tasks(task_id) ON DELETE CASCADE,
-            FOREIGN KEY (resource_id) REFERENCES resources(resource_id) ON DELETE CASCADE
+            project_id INT,
+            date DATE NOT NULL,
+            total_hours_available DECIMAL(8,2) NOT NULL,
+            hours_used DECIMAL(8,2) DEFAULT 0.00,
+            utilization_percentage DECIMAL(5,2) DEFAULT 0.00,
+            workload_level ENUM('underutilized', 'optimal', 'overloaded', 'critical') GENERATED ALWAYS AS (
+                CASE 
+                    WHEN utilization_percentage < 60 THEN 'underutilized'
+                    WHEN utilization_percentage >= 60 AND utilization_percentage <= 85 THEN 'optimal'
+                    WHEN utilization_percentage > 85 AND utilization_percentage <= 100 THEN 'overloaded'
+                    WHEN utilization_percentage > 100 THEN 'critical'
+                END
+            ) STORED,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            INDEX idx_resource_date (resource_type, resource_id, date),
+            INDEX idx_project_date (project_id, date)
         )");
-        
-        // 6. Progress reports (depends on projects and tasks)
-        $conn->query("CREATE TABLE IF NOT EXISTS progress_reports (
-            report_id INT AUTO_INCREMENT PRIMARY KEY,
-            project_id INT NOT NULL,
+
+        // Resource alerts
+        $conn->query("CREATE TABLE IF NOT EXISTS resource_alerts (
+            alert_id INT AUTO_INCREMENT PRIMARY KEY,
+            alert_type ENUM('overallocation', 'underutilization', 'conflict', 'capacity_warning', 'project_due_date', 'project_near_deadline', 'task_due_date', 'task_near_deadline', 'subtask_due_date', 'subtask_near_deadline') NOT NULL,
+            resource_type ENUM('employee', 'equipment', 'budget') NOT NULL,
+            resource_id INT NOT NULL,
+            project_id INT,
             task_id INT,
-            status ENUM('Not Started', 'In Progress', 'Completed', 'Delayed') DEFAULT 'Not Started',
-            progress_percent INT DEFAULT 0,
-            report_date DATE DEFAULT (CURRENT_DATE),
-            remarks TEXT,
+            severity ENUM('low', 'medium', 'high', 'critical') NOT NULL,
+            message TEXT NOT NULL,
+            threshold_value DECIMAL(10,2),
+            current_value DECIMAL(10,2),
+            status ENUM('active', 'acknowledged', 'resolved') DEFAULT 'active',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            resolved_at TIMESTAMP NULL,
+            INDEX idx_resource_status (resource_type, resource_id, status),
+            INDEX idx_severity_status (severity, status)
+        )");
+
+        // Budget tables
+        $conn->query("CREATE TABLE IF NOT EXISTS budget_categories (
+            category_id INT AUTO_INCREMENT PRIMARY KEY,
+            category_name VARCHAR(100) NOT NULL,
+            description TEXT,
+            parent_category_id INT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (parent_category_id) REFERENCES budget_categories(category_id)
+        )");
+
+        $conn->query("CREATE TABLE IF NOT EXISTS project_budgets (
+            budget_id INT AUTO_INCREMENT PRIMARY KEY,
+            project_id INT NOT NULL,
+            category_id INT NOT NULL,
+            allocated_amount DECIMAL(15,2) NOT NULL DEFAULT 0.00,
+            spent_amount DECIMAL(15,2) DEFAULT 0.00,
+            remaining_amount DECIMAL(15,2) GENERATED ALWAYS AS (allocated_amount - spent_amount) STORED,
+            fiscal_year VARCHAR(10),
+            status ENUM('active', 'frozen', 'closed') DEFAULT 'active',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             FOREIGN KEY (project_id) REFERENCES projects(project_id) ON DELETE CASCADE,
+            FOREIGN KEY (category_id) REFERENCES budget_categories(category_id)
+        )");
+
+        $conn->query("CREATE TABLE IF NOT EXISTS budget_expenses (
+            expense_id INT AUTO_INCREMENT PRIMARY KEY,
+            project_id INT NOT NULL,
+            budget_id INT NOT NULL,
+            task_id INT,
+            expense_description VARCHAR(255) NOT NULL,
+            amount DECIMAL(15,2) NOT NULL,
+            expense_date DATE NOT NULL,
+            expense_type ENUM('labor', 'equipment', 'materials', 'services', 'other') NOT NULL,
+            approved_by VARCHAR(255),
+            status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            FOREIGN KEY (project_id) REFERENCES projects(project_id) ON DELETE CASCADE,
+            FOREIGN KEY (budget_id) REFERENCES project_budgets(budget_id) ON DELETE CASCADE,
             FOREIGN KEY (task_id) REFERENCES tasks(task_id) ON DELETE SET NULL
         )");
-        
-        // 7. Budget allocations (depends on budgets, tasks, and resources)
-        $conn->query("CREATE TABLE IF NOT EXISTS budget_allocations (
-            budget_allocation_id INT AUTO_INCREMENT PRIMARY KEY,
-            budget_id INT NOT NULL,
-            task_id INT NOT NULL,
-            resource_id INT,
-            allocated_amount DECIMAL(15,2) DEFAULT 0.00,
-            spent_amount DECIMAL(15,2) DEFAULT 0.00,
-            FOREIGN KEY (budget_id) REFERENCES budgets(budget_id) ON DELETE CASCADE,
-            FOREIGN KEY (task_id) REFERENCES tasks(task_id) ON DELETE CASCADE,
-            FOREIGN KEY (resource_id) REFERENCES resources(resource_id) ON DELETE SET NULL
-        )");
-        
-        // 8. Resource notifications (depends on resources and projects)
-        // First check if table exists and alter ENUM if needed
-        $result = $conn->query("SHOW TABLES LIKE 'resource_notifications'");
-        if ($result->num_rows > 0) {
-            // Table exists, check if we need to alter the ENUM
-            $result = $conn->query("SHOW COLUMNS FROM resource_notifications LIKE 'notification_type'");
-            if ($result->num_rows > 0) {
-                // Alter the ENUM to include new notification types
-                $conn->query("ALTER TABLE resource_notifications MODIFY notification_type ENUM(
-                    'over_utilization', 'under_utilization', 'balancing_recommendation', 'system_alert',
-                    'project_due_date', 'project_near_deadline',
-                    'task_due_date', 'task_near_deadline',
-                    'subtask_due_date', 'subtask_near_deadline'
-                ) NOT NULL");
-            }
-        } else {
-            // Create table with all notification types
-            $conn->query("CREATE TABLE IF NOT EXISTS resource_notifications (
-                notification_id INT AUTO_INCREMENT PRIMARY KEY,
-                resource_id INT,
-                project_id INT,
-                notification_type ENUM(
-                    'over_utilization', 'under_utilization', 'balancing_recommendation', 'system_alert',
-                    'project_due_date', 'project_near_deadline',
-                    'task_due_date', 'task_near_deadline',
-                    'subtask_due_date', 'subtask_near_deadline'
-                ) NOT NULL,
-                message TEXT NOT NULL,
-                is_read BOOLEAN DEFAULT FALSE,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (resource_id) REFERENCES resources(resource_id) ON DELETE SET NULL,
-                FOREIGN KEY (project_id) REFERENCES projects(project_id) ON DELETE CASCADE
-            )");
-        }
+
+        // Create a compatibility view for legacy notifications API
+        $conn->query("DROP VIEW IF EXISTS resource_notifications_view");
+        $conn->query("CREATE VIEW resource_notifications_view AS
+            SELECT alert_id AS notification_id, alert_type AS notification_type, resource_id, project_id, message, (status = 'active') AS is_unread, created_at
+            FROM resource_alerts");
+    }
+
+    // Make sure legacy compatibility columns exist (virtual/generated columns)
+    // Projects: add name and budget aliases if they don't exist
+    $r = $conn->query("SHOW COLUMNS FROM projects LIKE 'name'");
+    if ($r->num_rows == 0) {
+        $conn->query("ALTER TABLE projects ADD COLUMN name VARCHAR(255) GENERATED ALWAYS AS (project_name) VIRTUAL");
+    }
+    $r = $conn->query("SHOW COLUMNS FROM projects LIKE 'budget'");
+    if ($r->num_rows == 0) {
+        $conn->query("ALTER TABLE projects ADD COLUMN budget DECIMAL(15,2) GENERATED ALWAYS AS (budget_allocated) VIRTUAL");
+    }
+
+    // Tasks: add name and progress_percent generated columns if they don't exist (for backward compatibility)
+    $r = $conn->query("SHOW COLUMNS FROM tasks LIKE 'name'");
+    if ($r->num_rows == 0) {
+        $conn->query("ALTER TABLE tasks ADD COLUMN name VARCHAR(255) GENERATED ALWAYS AS (task_name) VIRTUAL");
+    }
+    $r = $conn->query("SHOW COLUMNS FROM tasks LIKE 'progress_percent'");
+    if ($r->num_rows == 0) {
+        $conn->query("ALTER TABLE tasks ADD COLUMN progress_percent INT GENERATED ALWAYS AS (CAST(progress_percentage AS SIGNED)) VIRTUAL");
     }
 }
 
 // Ensure tables exist
 ensureTablesExist($conn);
 
-// Migrate: Add parent_task_id column if it doesn't exist
-$result = $conn->query("SHOW COLUMNS FROM tasks LIKE 'parent_task_id'");
-if ($result->num_rows == 0) {
-    $conn->query("ALTER TABLE tasks ADD COLUMN parent_task_id INT DEFAULT NULL AFTER dependency_task_id");
-    $conn->query("ALTER TABLE tasks ADD FOREIGN KEY (parent_task_id) REFERENCES tasks(task_id) ON DELETE CASCADE");
-}
+// (No-op migration hooks kept for backward compatibility)
+
 ?>

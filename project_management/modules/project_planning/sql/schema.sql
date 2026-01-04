@@ -4,11 +4,11 @@
 -- Projects Table
 CREATE TABLE IF NOT EXISTS projects (
     project_id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    description TEXT,
+    project_name VARCHAR(255) NOT NULL,
+    project_description TEXT,
     start_date DATE,
     end_date DATE,
-    budget DECIMAL(15,2),
+    budget_allocated DECIMAL(15,2) DEFAULT 0.00,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
@@ -17,12 +17,12 @@ CREATE TABLE IF NOT EXISTS projects (
 CREATE TABLE IF NOT EXISTS tasks (
     task_id INT AUTO_INCREMENT PRIMARY KEY,
     project_id INT NOT NULL,
-    name VARCHAR(255) NOT NULL,
-    description TEXT,
+    task_name VARCHAR(255) NOT NULL,
+    task_description TEXT,
     start_date DATE,
     end_date DATE,
     dependency_task_id INT DEFAULT NULL,
-    progress_percent INT DEFAULT 0,
+    progress_percentage DECIMAL(5,2) DEFAULT 0.00,
     FOREIGN KEY (project_id) REFERENCES projects(project_id) ON DELETE CASCADE,
     FOREIGN KEY (dependency_task_id) REFERENCES tasks(task_id) ON DELETE SET NULL
 );

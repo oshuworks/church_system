@@ -16,11 +16,11 @@
     <script src="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.min.js"></script>
 
     <!-- Shared CSS -->
-    <link rel="stylesheet" href="../../css/resources.css" />
-    <link rel="stylesheet" href="../../css/navbar.css" />
+    <link rel="stylesheet" href="/church_system-main/project_management/css/resources.css" />
+    <link rel="stylesheet" href="/church_system-main/project_management/css/navbar.css" />
     
     <!-- Module-specific CSS -->
-    <link rel="stylesheet" href="css/style.css" />
+    <link rel="stylesheet" href="/church_system-main/project_management/modules/project_planning/css/style.css" />
 </head>
 
 <body class="bg-primary-bg">
@@ -178,6 +178,7 @@
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Start Date</label>
+
                             <input type="date" class="form-control" id="task-start-date" name="start_date">
                         </div>
                         <div class="col-md-6 mb-3">
@@ -303,7 +304,7 @@
 <?php include '../../includes/footer.php'; ?>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script src="js/gantt.js"></script>
+<script src="/church_system-main/project_management/modules/project_planning/js/gantt.js"></script>
 
 <script>
 // Global variables
@@ -383,10 +384,10 @@ function renderProjectHeader() {
     progressBar.setAttribute('aria-valuenow', progress);
 }
 
-// Render Work Breakdown Structure
+// Render Work Breakdown Structure (with subtasks nested under parent tasks)
 function renderWBS() {
     const container = document.getElementById('tasks-container');
-    
+
     if (currentTasks.length === 0) {
         container.innerHTML = `
             <div class="text-center text-muted py-5">
@@ -396,55 +397,85 @@ function renderWBS() {
         `;
         return;
     }
-    
-    // Group tasks by dependency level
-    const taskMap = new Map();
-    const rootTasks = [];
-    
-    currentTasks.forEach(task => {
-        taskMap.set(task.task_id, task);
-    });
-    
-    currentTasks.forEach(task => {
-        if (!task.dependency_task_id) {
-            rootTasks.push(task);
+
+    // Build parent -> subtasks map
+    const parentTasks = currentTasks.filter(t => !t.parent_task_id);
+    const subtasksMap = new Map();
+    currentTasks.forEach(t => {
+        if (t.parent_task_id) {
+            if (!subtasksMap.has(t.parent_task_id)) subtasksMap.set(t.parent_task_id, []);
+            subtasksMap.get(t.parent_task_id).push(t);
         }
     });
-    
-    // Build task tree HTML
+
+    // Sort parents by start date then name
+    parentTasks.sort((a, b) => {
+        const da = a.start_date ? new Date(a.start_date) : new Date(0);
+        const db = b.start_date ? new Date(b.start_date) : new Date(0);
+        if (da - db !== 0) return da - db;
+        return (a.name || '').localeCompare(b.name || '');
+    });
+
     let html = '<div class="table-responsive"><table class="table table-hover">';
     html += '<thead><tr>';
     html += '<th>Task</th><th>Description</th><th>Start Date</th><th>End Date</th><th>Dependency</th><th>Progress</th><th>Actions</th>';
     html += '</tr></thead><tbody>';
-    
-    currentTasks.forEach(task => {
-        const progressClass = task.progress_percent === 100 ? 'bg-primary' : 
-                             task.progress_percent > 0 ? 'bg-dark' : 'bg-secondary';
-        const dependencyText = task.dependency_task_name ? 
-            `<span class="badge bg-primary">${escapeHtml(task.dependency_task_name)}</span>` : 
+
+    parentTasks.forEach(parent => {
+        const progressClass = parent.progress_percent === 100 ? 'bg-primary' : 
+                              parent.progress_percent > 0 ? 'bg-dark' : 'bg-secondary';
+        const dependencyText = parent.dependency_task_name ? 
+            `<span class="badge bg-primary">${escapeHtml(parent.dependency_task_name)}</span>` : 
             '<span class="text-muted">None</span>';
-        
-        html += `<tr data-task-id="${task.task_id}">`;
-        html += `<td><strong>${escapeHtml(task.name)}</strong></td>`;
-        html += `<td>${escapeHtml(task.description || '-')}</td>`;
-        html += `<td>${task.start_date || '-'}</td>`;
-        html += `<td>${task.end_date || '-'}</td>`;
+
+        html += `<tr data-task-id="${parent.task_id}">`;
+        html += `<td><strong>${escapeHtml(parent.name)}</strong></td>`;
+        const pDesc = escapeHtml(parent.description || '-');
+        html += `<td>${pDesc.length > 140 ? pDesc.slice(0,140) + '...' : pDesc}<br/><button class="btn btn-sm btn-outline-primary mt-1" onclick='showTaskDescriptionModal(${parent.task_id}, ${JSON.stringify(parent.name)}, ${JSON.stringify(parent.description || '-')})'><i class="fas fa-eye me-1"></i> View Full Description</button></td>`;
+        html += `<td>${parent.start_date || '-'}</td>`;
+        html += `<td>${parent.end_date || '-'}</td>`;
         html += `<td>${dependencyText}</td>`;
         html += `<td>
             <div class="progress" style="height: 20px;">
-                <div class="progress-bar ${progressClass}" style="width: ${task.progress_percent}%">
-                    ${task.progress_percent}%
+                <div class="progress-bar ${progressClass}" style="width: ${parent.progress_percent}%">
+                    ${parent.progress_percent}%
                 </div>
             </div>
         </td>`;
         html += `<td>
-            <button class="btn btn-sm btn-primary" onclick="editTask(${task.task_id})">
+            <button class="btn btn-sm btn-primary" onclick="editTask(${parent.task_id})">
                 <i class="fas fa-edit"></i>
             </button>
         </td>`;
         html += `</tr>`;
+
+        // render subtasks directly under parent
+        const subs = subtasksMap.get(parent.task_id) || [];
+        subs.forEach(sub => {
+            const sProg = sub.progress_percent === 100 ? 'bg-primary' : sub.progress_percent > 0 ? 'bg-dark' : 'bg-secondary';
+            const sDesc = escapeHtml(sub.description || '-');
+            html += `<tr class="subtask-row" data-parent-id="${parent.task_id}">`;
+            html += `<td class="ps-4"><i class="fas fa-level-down-alt me-2"></i>${escapeHtml(sub.name)}</td>`;
+            html += `<td>${sDesc.length > 120 ? sDesc.slice(0,120) + '...' : sDesc}<br/><button class="btn btn-sm btn-outline-primary mt-1" onclick='showTaskDescriptionModal(${sub.task_id}, ${JSON.stringify(sub.name)}, ${JSON.stringify(sub.description || '-')})'><i class="fas fa-eye me-1"></i> View Full Description</button></td>`;
+            html += `<td>${sub.start_date || '-'}</td>`;
+            html += `<td>${sub.end_date || '-'}</td>`;
+            html += `<td>${sub.dependency_task_name ? `<span class="badge bg-primary">${escapeHtml(sub.dependency_task_name)}</span>` : '<span class="text-muted">None</span>'}</td>`;
+            html += `<td>
+                <div class="progress" style="height: 20px;">
+                    <div class="progress-bar ${sProg}" style="width: ${sub.progress_percent}%">
+                        ${sub.progress_percent}%
+                    </div>
+                </div>
+            </td>`;
+            html += `<td>
+                <button class="btn btn-sm btn-primary" onclick="editTask(${sub.task_id})">
+                    <i class="fas fa-edit"></i>
+                </button>
+            </td>`;
+            html += `</tr>`;
+        });
     });
-    
+
     html += '</tbody></table></div>';
     container.innerHTML = html;
 }
@@ -458,14 +489,16 @@ function showAddTaskModal() {
     document.getElementById('task-end-date').value = '';
     document.getElementById('task-dependency').value = '';
     document.getElementById('task-progress').value = '0';
-    
-    // Populate dependency dropdown
+
+    // Populate dependency dropdown with only parent tasks (no subtasks)
     const dependencySelect = document.getElementById('task-dependency');
     dependencySelect.innerHTML = '<option value="">No dependency</option>';
     currentTasks.forEach(task => {
-        dependencySelect.innerHTML += `<option value="${task.task_id}">${escapeHtml(task.name)}</option>`;
+        if (!task.parent_task_id) {
+            dependencySelect.innerHTML += `<option value="${task.task_id}">${escapeHtml(task.name)}</option>`;
+        }
     });
-    
+
     const modal = new bootstrap.Modal(document.getElementById('addTaskModal'));
     modal.show();
 }
@@ -790,6 +823,16 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+// Show task description modal (module)
+function showTaskDescriptionModal(taskId, taskName, taskDescription) {
+    document.getElementById('viewTaskDescriptionTitleModule').textContent = taskName;
+    const descriptionContent = document.getElementById('viewTaskDescriptionContentModule');
+    const safeDesc = taskDescription ? escapeHtml(taskDescription) : 'No description available.';
+    descriptionContent.innerHTML = safeDesc.replace(/\n/g, '<br>');
+    const modal = new bootstrap.Modal(document.getElementById('viewTaskDescriptionModalModule'));
+    modal.show();
 }
 </script>
 

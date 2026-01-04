@@ -6,7 +6,7 @@ header('Content-Type: application/json');
 // Function to calculate and update parent task progress from subtasks
 function updateParentTaskProgress($conn, $parent_task_id) {
     // Get all subtasks
-    $stmt = $conn->prepare("SELECT progress_percent FROM tasks WHERE parent_task_id = ?");
+    $stmt = $conn->prepare("SELECT progress_percentage FROM tasks WHERE parent_task_id = ?");
     $stmt->bind_param("i", $parent_task_id);
     $stmt->execute();
     $result = $stmt->get_result();
@@ -20,14 +20,14 @@ function updateParentTaskProgress($conn, $parent_task_id) {
         // Calculate average progress of all subtasks
         $total_progress = 0;
         foreach ($subtasks as $subtask) {
-            $total_progress += $subtask['progress_percent'];
+            $total_progress += $subtask['progress_percentage'];
         }
         $new_progress = round($total_progress / count($subtasks));
     }
     
     // Update parent task progress
-    $stmt = $conn->prepare("UPDATE tasks SET progress_percent = ? WHERE task_id = ?");
-    $stmt->bind_param("ii", $new_progress, $parent_task_id);
+    $stmt = $conn->prepare("UPDATE tasks SET progress_percentage = ? WHERE task_id = ?");
+    $stmt->bind_param("di", $new_progress, $parent_task_id);
     $stmt->execute();
 }
 
@@ -43,9 +43,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     
     try {
         $stmt = $conn->prepare("
-            SELECT t.*, 
-                   p.name as project_name,
-                   dt.name as dependency_task_name
+            SELECT t.task_id, t.task_name AS name, t.task_description AS description, t.start_date, t.end_date, t.estimated_hours, t.actual_hours, t.status, t.priority, t.progress_percentage AS progress_percent,
+                   p.project_name as project_name,
+                   dt.task_name as dependency_task_name
             FROM tasks t
             LEFT JOIN projects p ON t.project_id = p.project_id
             LEFT JOIN tasks dt ON t.dependency_task_id = dt.task_id
@@ -87,7 +87,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $end_date = $data['end_date'] ?? null;
     $dependency_task_id = $data['dependency_task_id'] ?? null;
     $parent_task_id = $data['parent_task_id'] ?? null;
-    $progress_percent = $data['progress_percent'] ?? 0;
+    $progress_percentage = floatval($data['progress_percent'] ?? 0);
     
     if (!$name || !$project_id) {
         http_response_code(400);
@@ -218,20 +218,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     try {
         $stmt = $conn->prepare("
-            INSERT INTO tasks (name, description, project_id, start_date, end_date, dependency_task_id, parent_task_id, progress_percent) 
+            INSERT INTO tasks (task_name, task_description, project_id, start_date, end_date, dependency_task_id, parent_task_id, progress_percentage) 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         ");
-        $stmt->bind_param("ssissiii", $name, $description, $project_id, $start_date, $end_date, $dependency_task_id, $parent_task_id, $progress_percent);
+        $stmt->bind_param("ssissiid", $name, $description, $project_id, $start_date, $end_date, $dependency_task_id, $parent_task_id, $progress_percentage);
         
         if ($stmt->execute()) {
             $new_task_id = $conn->insert_id;
-            
+
+            // server-side debug: log the parent id we received
+            error_log('task POST received parent_task_id: ' . var_export($parent_task_id, true));
+
             // If this is a subtask, update parent task progress
             if ($parent_task_id) {
                 updateParentTaskProgress($conn, $parent_task_id);
             }
-            
-            echo json_encode(['success' => true, 'task_id' => $new_task_id, 'message' => 'Task created successfully']);
+
+            // Fetch the created task to return full details (helps client-side validations)
+            $fetchStmt = $conn->prepare("SELECT task_id, task_name as name, task_description as description, project_id, start_date, end_date, dependency_task_id, parent_task_id, progress_percentage AS progress_percent FROM tasks WHERE task_id = ?");
+            if ($fetchStmt) {
+                $fetchStmt->bind_param('i', $new_task_id);
+                $fetchStmt->execute();
+                $createdTask = $fetchStmt->get_result()->fetch_assoc();
+            } else {
+                $createdTask = null;
+            }
+
+            echo json_encode(['success' => true, 'task_id' => $new_task_id, 'task' => $createdTask, 'message' => 'Task created successfully']);
         } else {
             http_response_code(500);
             echo json_encode(['error' => 'Failed to create task']);
@@ -256,7 +269,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
     $end_date = $data['end_date'] ?? null;
     $dependency_task_id = $data['dependency_task_id'] ?? null;
     $parent_task_id = $data['parent_task_id'] ?? null;
-    $progress_percent = $data['progress_percent'] ?? null;
+    $progress_percentage = isset($data['progress_percent']) ? floatval($data['progress_percent']) : null;
     
     if (!$task_id) {
         http_response_code(400);
@@ -266,12 +279,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
     
     // If name is not provided, fetch it from database (for progress-only updates)
     if (!$name) {
-        $stmt = $conn->prepare("SELECT name FROM tasks WHERE task_id = ?");
+        $stmt = $conn->prepare("SELECT task_name FROM tasks WHERE task_id = ?");
         $stmt->bind_param("i", $task_id);
         $stmt->execute();
         $result = $stmt->get_result()->fetch_assoc();
         if ($result) {
-            $name = $result['name'];
+            $name = $result['task_name'];
         } else {
             http_response_code(404);
             echo json_encode(['error' => 'Task not found']);
@@ -424,12 +437,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
         $types = '';
         
         if ($name) {
-            $update_fields[] = "name = ?";
+            $update_fields[] = "task_name = ?";
             $params[] = $name;
             $types .= 's';
         }
         if ($description !== null) {
-            $update_fields[] = "description = ?";
+            $update_fields[] = "task_description = ?";
             $params[] = $description;
             $types .= 's';
         }
@@ -453,10 +466,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
             $params[] = $parent_task_id;
             $types .= 'i';
         }
-        if ($progress_percent !== null) {
-            $update_fields[] = "progress_percent = ?";
-            $params[] = $progress_percent;
-            $types .= 'i';
+        if ($progress_percentage !== null) {
+            $update_fields[] = "progress_percentage = ?";
+            $params[] = $progress_percentage;
+            $types .= 'd';
         }
         
         if (empty($update_fields)) {
@@ -482,7 +495,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
         if ($stmt->execute()) {
             // Update parent task progress if this task is a subtask and progress changed
             $new_parent_task_id = $parent_task_id !== null ? $parent_task_id : $old_parent_task_id;
-            if ($new_parent_task_id && $progress_percent !== null) {
+            if ($new_parent_task_id && $progress_percentage !== null) {
                 updateParentTaskProgress($conn, $new_parent_task_id);
             }
             

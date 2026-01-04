@@ -88,23 +88,23 @@ modules/project_planning/
 
 ### projects
 - `project_id` (INT, PRIMARY KEY)
-- `name` (VARCHAR(255))
-- `description` (TEXT)
+- `project_name` (VARCHAR(255))
+- `project_description` (TEXT)
 - `start_date` (DATE)
 - `end_date` (DATE)
-- `budget` (DECIMAL(15,2))
+- `budget_allocated` (DECIMAL(15,2))
 - `created_at` (TIMESTAMP)
 - `updated_at` (TIMESTAMP)
 
 ### tasks
 - `task_id` (INT, PRIMARY KEY)
 - `project_id` (INT, FOREIGN KEY)
-- `name` (VARCHAR(255))
-- `description` (TEXT)
+- `task_name` (VARCHAR(255))
+- `task_description` (TEXT)
 - `start_date` (DATE)
 - `end_date` (DATE)
 - `dependency_task_id` (INT, FOREIGN KEY, NULLABLE)
-- `progress_percent` (INT, DEFAULT 0)
+- `progress_percentage` (DECIMAL(5,2), DEFAULT 0.00)
 
 ## API Endpoints
 

@@ -301,6 +301,24 @@ a.nav-link:hover {
     }
 }
 
+/* Project header buttons and description handling */
+#project-header { overflow: visible; }
+#project-header .d-flex { align-items:flex-start; flex-wrap:wrap; }
+#project-header .project-header-left { flex: 1 1 auto; min-width: 0; }
+#project-header .project-header-actions { flex: 0 0 180px; display:flex; gap:0.5rem; align-items:flex-start; }
+#project-header .project-header-description { flex: 1 0 100%; }
+#project-header #project-description { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; }
+#project-header .project-header-actions .btn { white-space: nowrap; min-width: 140px; }
+
+/* Smaller screens: allow normal flow */
+@media (max-width: 576px) {
+    #project-header #project-description { -webkit-line-clamp: 4; }
+    #project-header .project-header-actions { flex: 1 1 auto; order: 2; }
+    #project-header .project-header-left { order: 1; }
+    #project-header .project-header-description { order: 3; }
+    #project-header .project-header-actions .btn { min-width: 0; width: auto; }
+}
+
 /* WBS Card Styling */
 .progress-toggle-buttons .btn-group {
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);

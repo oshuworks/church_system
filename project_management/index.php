@@ -16,9 +16,9 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
     <!-- Your UI theme -->
-    <link rel="stylesheet" href="css/resources.css" />
-    <link rel="stylesheet" href="css/navbar.css" />
-    <link rel="stylesheet" href="css/style.css" />
+    <link rel="stylesheet" href="/church_system-main/project_management/css/resources.css" />
+    <link rel="stylesheet" href="/church_system-main/project_management/css/navbar.css" />
+    <link rel="stylesheet" href="/church_system-main/project_management/css/style.css" />
 </head>
 
 <body class="bg-primary-bg">
@@ -84,12 +84,12 @@
             <?php
             include 'includes/db.php';
             $result = $conn->query("
-                SELECT p.*, 
+                SELECT p.*, p.project_name AS name, p.project_description AS description,
                        COUNT(DISTINCT t.task_id) as task_count,
-                       COUNT(DISTINCT CASE WHEN t.progress_percent = 100 THEN t.task_id END) as completed_tasks,
-                       COUNT(DISTINCT CASE WHEN t.end_date < CURDATE() AND t.progress_percent < 100 THEN t.task_id END) as overdue_tasks,
+                       COUNT(DISTINCT CASE WHEN t.progress_percentage = 100 THEN t.task_id END) as completed_tasks,
+                       COUNT(DISTINCT CASE WHEN t.end_date < CURDATE() AND t.progress_percentage < 100 THEN t.task_id END) as overdue_tasks,
                        CASE 
-                           WHEN (COUNT(DISTINCT CASE WHEN t.progress_percent = 100 THEN t.task_id END) = COUNT(DISTINCT t.task_id) AND COUNT(DISTINCT t.task_id) > 0) THEN 3
+                           WHEN (COUNT(DISTINCT CASE WHEN t.progress_percentage = 100 THEN t.task_id END) = COUNT(DISTINCT t.task_id) AND COUNT(DISTINCT t.task_id) > 0) THEN 3
                            WHEN (COUNT(DISTINCT CASE WHEN t.end_date < CURDATE() AND t.progress_percent < 100 THEN t.task_id END) > 0) OR (p.end_date < CURDATE() AND COUNT(DISTINCT CASE WHEN t.progress_percent = 100 THEN t.task_id END) < COUNT(DISTINCT t.task_id)) THEN 1
                            ELSE 2
                        END as sort_priority,
@@ -138,7 +138,7 @@
                 echo "                </a>";
                 echo "            </h5>";
                 
-                echo "            <p class='card-text text-muted small flex-grow-1 mb-3 card-text-truncate' 
+                echo "            <p class='card-text text-muted small mb-3 card-text-truncate' 
                        title='" . htmlspecialchars($row['description'] ?? 'No description', ENT_QUOTES) . "'>";
                 echo "                " . htmlspecialchars($row['description'] ?? 'No description') . "";
                 echo "            </p>";
@@ -490,7 +490,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script src="js/main.js"></script>
+<script src="/church_system-main/project_management/js/main.js"></script>
 
 <script>
 // View switch

@@ -9,8 +9,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $stmt = $conn->prepare("
             SELECT p.*, 
                    COUNT(DISTINCT t.task_id) as task_count,
-                   COUNT(DISTINCT CASE WHEN t.progress_percent = 100 THEN t.task_id END) as completed_tasks,
-                   COUNT(DISTINCT CASE WHEN t.end_date < CURDATE() AND t.progress_percent < 100 THEN t.task_id END) as overdue_tasks
+                   COUNT(DISTINCT CASE WHEN t.progress_percentage = 100 THEN t.task_id END) as completed_tasks,
+                   COUNT(DISTINCT CASE WHEN t.end_date < CURDATE() AND t.progress_percentage < 100 THEN t.task_id END) as overdue_tasks
             FROM projects p
             LEFT JOIN tasks t ON p.project_id = t.project_id
             GROUP BY p.project_id

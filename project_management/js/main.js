@@ -56,13 +56,23 @@ async function loadNotifications() {
         // Load deadline notifications (both read and unread to show the list)
         const response = await fetch('api/notifications_api.php?deadline_only=true');
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            const text = await response.text();
+            console.error('Notifications fetch failed:', response.status, text);
+            return;
         }
 
-        const data = await response.json();
+        let data;
+        try {
+            data = await response.json();
+        } catch (err) {
+            const text = await response.text();
+            console.error('Notifications response is not valid JSON:', text);
+            return;
+        }
 
         if (data.error) {
-            throw new Error(data.error);
+            console.error('Notifications API error:', data.error);
+            return;
         }
 
         console.log('Loaded notifications:', data.notifications?.length || 0, data.notifications);
@@ -293,8 +303,14 @@ async function checkForNewNotifications() {
         // Trigger system check for new utilization notifications
         const response = await fetch('api/resource_balancing.php?check_notifications=true');
         if (response.ok) {
-            const data = await response.json();
-            if (data.success && data.notifications_created > 0) {
+            let data;
+            try {
+                data = await response.json();
+            } catch (err) {
+                console.error('resource_balancing response not JSON');
+            }
+
+            if (data && data.success && data.notifications_created > 0) {
                 // Reload notifications if new ones were created
                 loadNotifications();
 

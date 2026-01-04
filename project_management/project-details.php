@@ -20,9 +20,9 @@
     <script src="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.min.js"></script>
 
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="css/style.css" />
-    <link rel="stylesheet" href="css/navbar.css" />
-    <link rel="stylesheet" href="css/resources.css" />
+    <link rel="stylesheet" href="/church_system-main/project_management/css/style.css" />
+    <link rel="stylesheet" href="/church_system-main/project_management/css/navbar.css" />
+    <link rel="stylesheet" href="/church_system-main/project_management/css/resources.css" />
 </head>
 
 <body class="bg-primary-bg">
@@ -33,11 +33,10 @@
     
     <!-- Project Header -->
     <div id="project-header" class="card secondary-card p-4 mb-4">
-        <div class="d-flex justify-content-between align-items-start">
-            <div>
+        <div class="d-flex justify-content-between align-items-start flex-wrap">
+            <div class="project-header-left">
                 <h1><i class="fas fa-project-diagram me-2"></i><span id="project-name">Loading...</span></h1>
-                <p id="project-description" class="text-muted">Loading project details...</p>
-                <div class="mt-3">
+                <div class="mt-3 project-header-badges">
                     <span class="badge bg-primary me-2">
                         <i class="fas fa-calendar"></i> Start: <span id="project-start-date">-</span>
                     </span>
@@ -52,13 +51,16 @@
                     </span>
                 </div>
             </div>
-            <div class="d-flex gap-2">
+            <div class="project-header-actions">
                 <button class="btn btn-primary" onclick="showEditProjectModal()">
                     <i class="fas fa-edit me-1"></i> Edit Project
                 </button>
                 <a href="index.php" class="btn btn-outline-dark" onclick="return handleBackToProjects(event)">
                     <i class="fas fa-arrow-left me-1"></i> Back to Projects
                 </a>
+            </div>
+            <div class="project-header-description w-100 mt-3">
+                <p id="project-description" class="text-muted mb-0">Loading project details...</p>
             </div>
         </div>
         
@@ -375,8 +377,8 @@
 <?php include 'includes/footer.php'; ?>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script src="js/gantt.js"></script>
-<script src="js/main.js"></script>
+<script src="/church_system-main/project_management/js/gantt.js"></script>
+<script src="/church_system-main/project_management/js/main.js"></script>
 
 <script>
 // Global variables
@@ -627,7 +629,7 @@ function renderWBS() {
                                 <li><a class="dropdown-item" href="#" onclick="showAddSubtaskModal(${task.task_id})">
                                     <i class="fas fa-plus-circle me-2"></i> Add Subtask
                                 </a></li>
-                                <li><a class="dropdown-item" href="#" onclick="showDeleteTaskModal(${task.task_id}, '${escapeHtml(task.name)}', ${hasSubtasks})">
+                                <li><a class="dropdown-item" href="#" onclick='showDeleteTaskModal(${task.task_id}, ${JSON.stringify(task.name)}, ${hasSubtasks})'>
                                     <i class="fas fa-trash me-2"></i> Delete
                                 </a></li>
                             </ul>
@@ -639,7 +641,7 @@ function renderWBS() {
                         <p class="card-text text-muted small mb-2 task-description-text" style="display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; line-height: 1.4; min-height: 2.8em;">
                             ${escapeHtml(task.description || 'No description')}
                         </p>
-                        <button class="btn btn-sm btn-outline-primary w-100" onclick="showTaskDescriptionModal(${task.task_id}, ${JSON.stringify(task.name)}, ${JSON.stringify(task.description || 'No description')})">
+                        <button class="btn btn-sm btn-outline-primary w-100" onclick='showTaskDescriptionModal(${task.task_id}, ${JSON.stringify(task.name)}, ${JSON.stringify(task.description || 'No description')})'>
                             <i class="fas fa-eye me-1"></i> View Full Description
                         </button>
                     </div>
@@ -727,6 +729,12 @@ function renderWBS() {
                                                 ${subtask.progress_percent}%
                                             </div>
                                         </div>
+                                        <p class="small text-muted mb-2 subtask-description" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; line-height: 1.3; min-height: 2.6em;">
+                                            ${escapeHtml(subtask.description || 'No description')}
+                                        </p>
+                                        <button class="btn btn-sm btn-outline-primary w-100 mb-2" onclick='showTaskDescriptionModal(${subtask.task_id}, ${JSON.stringify(subtask.name)}, ${JSON.stringify(subtask.description || 'No description')})'>
+                                            <i class="fas fa-eye me-1"></i> View Full Description
+                                        </button>
                                     </div>
                                     <div class="dropdown">
                                         <button class="btn btn-sm btn-outline-dark" type="button" data-bs-toggle="dropdown">
@@ -736,7 +744,7 @@ function renderWBS() {
                                             <li><a class="dropdown-item" href="#" onclick="editTask(${subtask.task_id})">
                                                 <i class="fas fa-edit me-2"></i> Edit
                                             </a></li>
-                                            <li><a class="dropdown-item" href="#" onclick="showDeleteTaskModal(${subtask.task_id}, '${escapeHtml(subtask.name)}', false)">
+                                            <li><a class="dropdown-item" href="#" onclick='showDeleteTaskModal(${subtask.task_id}, ${JSON.stringify(subtask.name)}, false)'>
                                                 <i class="fas fa-trash me-2"></i> Delete
                                             </a></li>
                                         </ul>
@@ -902,6 +910,10 @@ async function saveTask() {
     }
     
     const formData = new FormData(form);
+    // Robustly parse parent_task_id to avoid empty-string being misinterpreted
+    const rawParent = formData.get('parent_task_id');
+    const parsedParent = (rawParent !== null && rawParent !== '') ? parseInt(rawParent, 10) : null;
+
     const taskData = {
         name: formData.get('name'),
         description: formData.get('description'),
@@ -909,9 +921,11 @@ async function saveTask() {
         start_date: formData.get('start_date') || null,
         end_date: formData.get('end_date') || null,
         dependency_task_id: formData.get('dependency_task_id') ? parseInt(formData.get('dependency_task_id')) : null,
-        parent_task_id: formData.get('parent_task_id') ? parseInt(formData.get('parent_task_id')) : null,
+        parent_task_id: parsedParent,
         progress_percent: parseInt(formData.get('progress_percent')) || 0
     };
+
+    console.log('saveTask payload:', taskData);
     
     try {
         const response = await fetch('api/task.php', {
@@ -923,6 +937,7 @@ async function saveTask() {
         });
         
         const data = await response.json();
+        console.log('create task response:', data);
         
         if (data.error) {
             throw new Error(data.error);
@@ -930,6 +945,11 @@ async function saveTask() {
         
         bootstrap.Modal.getInstance(document.getElementById('addTaskModal')).hide();
         loadProjectDetails();
+        
+        // If returned task has parent_task_id, ensure UI will reflect it
+        if (data.task && data.task.parent_task_id) {
+            console.log('Created subtask for parent:', data.task.parent_task_id);
+        }
         
     } catch (error) {
         showError('Failed to create task: ' + error.message);
@@ -1393,8 +1413,9 @@ function handleBackToProjects(event) {
 function showTaskDescriptionModal(taskId, taskName, taskDescription) {
     document.getElementById('viewTaskDescriptionTitle').textContent = taskName;
     const descriptionContent = document.getElementById('viewTaskDescriptionContent');
-    // taskDescription is already properly escaped from JSON.stringify
-    descriptionContent.textContent = taskDescription || 'No description available.';
+    // Preserve formatting: escape HTML then convert newlines to <br>
+    const safeDesc = taskDescription ? escapeHtml(taskDescription) : 'No description available.';
+    descriptionContent.innerHTML = safeDesc.replace(/\n/g, '<br>');
     
     const modal = new bootstrap.Modal(document.getElementById('viewTaskDescriptionModal'));
     modal.show();

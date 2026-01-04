@@ -30,7 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         // Fetch tasks with dependency information
         $stmt = $conn->prepare("
             SELECT t.*, 
-                   dt.name as dependency_task_name
+                   dt.task_name as dependency_task_name
             FROM tasks t
             LEFT JOIN tasks dt ON t.dependency_task_id = dt.task_id
             WHERE t.project_id = ?

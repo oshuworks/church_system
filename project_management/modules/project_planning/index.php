@@ -12,11 +12,11 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 
     <!-- Shared UI theme -->
-    <link rel="stylesheet" href="../../css/resources.css" />
-    <link rel="stylesheet" href="../../css/navbar.css" />
+    <link rel="stylesheet" href="/church_system-main/project_management/css/resources.css" />
+    <link rel="stylesheet" href="/church_system-main/project_management/css/navbar.css" />
     
     <!-- Module-specific CSS -->
-    <link rel="stylesheet" href="css/style.css" />
+    <link rel="stylesheet" href="/church_system-main/project_management/modules/project_planning/css/style.css" />
 </head>
 
 <body class="bg-primary-bg">
@@ -76,7 +76,7 @@
                     $result = $conn->query("
                         SELECT p.*, 
                                COUNT(DISTINCT t.task_id) as task_count,
-                               COUNT(DISTINCT CASE WHEN t.progress_percent = 100 THEN t.task_id END) as completed_tasks
+                               COUNT(DISTINCT CASE WHEN t.progress_percentage = 100 THEN t.task_id END) as completed_tasks
                         FROM projects p
                         LEFT JOIN tasks t ON p.project_id = t.project_id
                         GROUP BY p.project_id

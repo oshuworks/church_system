@@ -11,26 +11,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         if ($project_id) {
             // Fetch tasks for specific project with dependency information
             $stmt = $conn->prepare("
-                SELECT t.*, 
-                       p.name as project_name,
-                       dt.name as dependency_task_name
+                SELECT t.task_id, t.task_name AS name, t.task_description AS description, t.start_date, t.end_date, t.estimated_hours, t.actual_hours, t.status, t.priority, t.progress_percentage AS progress_percent,
+                       p.project_name as project_name,
+                       dt.task_name as dependency_task_name
                 FROM tasks t
                 LEFT JOIN projects p ON t.project_id = p.project_id
                 LEFT JOIN tasks dt ON t.dependency_task_id = dt.task_id
                 WHERE t.project_id = ?
-                ORDER BY t.start_date, t.name
+                ORDER BY t.start_date, t.task_name
             ");
             $stmt->bind_param("i", $project_id);
         } else {
             // Fetch all tasks with project information
             $stmt = $conn->prepare("
-                SELECT t.*, 
-                       p.name as project_name,
-                       dt.name as dependency_task_name
+                SELECT t.task_id, t.task_name AS name, t.task_description AS description, t.start_date, t.end_date, t.estimated_hours, t.actual_hours, t.status, t.priority, t.progress_percentage AS progress_percent,
+                       p.project_name as project_name,
+                       dt.task_name as dependency_task_name
                 FROM tasks t
                 LEFT JOIN projects p ON t.project_id = p.project_id
                 LEFT JOIN tasks dt ON t.dependency_task_id = dt.task_id
-                ORDER BY p.name, t.start_date, t.name
+                ORDER BY p.project_name, t.start_date, t.task_name
             ");
         }
         
@@ -61,7 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     try {
-        $stmt = $conn->prepare("INSERT INTO tasks (name, description, project_id, start_date, end_date) VALUES (?, ?, ?, ?, ?)");
+        $stmt = $conn->prepare("INSERT INTO tasks (task_name, task_description, project_id, start_date, end_date) VALUES (?, ?, ?, ?, ?)");
         $stmt->bind_param("ssiss", $name, $description, $project_id, $start_date, $end_date);
 
         if ($stmt->execute()) {
