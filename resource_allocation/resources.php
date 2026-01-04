@@ -128,10 +128,6 @@ $activePage = 'resources';
             <label class="form-label">End Date</label>
             <input type="date" class="form-control" id="assign-end" required>
           </div>
-          <div class="col-12">
-            <label class="form-label">Notes (optional)</label>
-            <textarea class="form-control" id="assign-notes" rows="2" placeholder="Add context for this allocation"></textarea>
-          </div>
           <div class="col-12 d-flex justify-content-between align-items-center">
             <small class="text-muted" id="assign-availability-note">Select a project to load tasks and resources.</small>
             <button type="submit" class="btn btn-primary"><i class="fas fa-plus-circle me-1"></i>Assign Resource</button>
@@ -145,7 +141,7 @@ $activePage = 'resources';
       <div class="card-body">
         <div class="d-flex justify-content-between align-items-center mb-3">
           <div>
-            <h5 class="mb-0">Utilization & Balancing</h5>
+            <h5 class="mb-0">Utilization</h5>
             <small class="text-muted">Spot underutilized resources and relieve overloaded ones.</small>
           </div>
         </div>
@@ -209,7 +205,6 @@ $activePage = 'resources';
               <option value="completed">Completed</option>
               <option value="cancelled">Cancelled</option>
             </select>
-            <button class="btn btn-outline-primary btn-sm" id="assignments-refresh"><i class="fas fa-sync me-1"></i>Refresh</button>
           </div>
         </div>
 
@@ -232,6 +227,17 @@ $activePage = 'resources';
               <tr><td colspan="9" class="text-center text-muted py-4">Loading assignments...</td></tr>
             </tbody>
           </table>
+        </div>
+        <div class="d-flex justify-content-between align-items-center mt-2">
+          <small class="text-muted" id="assignments-count">0 assignments</small>
+          <div class="btn-group btn-group-sm">
+            <button class="btn btn-outline-secondary" id="assignments-prev" disabled>
+              <i class="fas fa-chevron-left"></i>
+            </button>
+            <button class="btn btn-outline-secondary" id="assignments-next" disabled>
+              <i class="fas fa-chevron-right"></i>
+            </button>
+          </div>
         </div>
       </div>
     </section>

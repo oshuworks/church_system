@@ -7,6 +7,17 @@
 
   const moneyFmt = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'PHP' });
   const percentFmt = (value) => `${Number(value ?? 0).toFixed(0)}%`;
+  
+  // Format date for Philippines timezone
+  function formatDatePH(dateString) {
+    if (!dateString || dateString === '0000-00-00') return 'Not set';
+    const date = new Date(dateString + 'T00:00:00+08:00'); // Set to PH timezone
+    return date.toLocaleDateString('en-PH', { 
+      month: 'short', 
+      day: 'numeric', 
+      year: 'numeric' 
+    });
+  }
   let projectsCache = [];
   let tasksCache = [];
   let employeesCache = [];
@@ -411,17 +422,23 @@
 
   // Generic pagination functions for tables
   function renderPaginatedTable(tableName, data, pagination, renderRowFunction) {
-    const tbody = document.getElementById(`${tableName}-body`);
+    // Assignments table uses a different ID structure
+    const tbodyId = tableName === 'assignments' ? 'assignments-list' : `${tableName}-body`;
+    const tbody = document.getElementById(tbodyId);
     if (!tbody || !data) return;
+
+    console.log(`Rendering ${tableName} table:`, { data, pagination }); // Debug log
 
     const startIndex = (pagination.page - 1) * pagination.pageSize;
     const endIndex = startIndex + pagination.pageSize;
     const pageItems = data.slice(startIndex, endIndex);
 
+    console.log(`Page items for ${tableName}:`, pageItems); // Debug log
+
     tbody.innerHTML = '';
     
     if (!pageItems.length) {
-      tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-4">No ${tableName} found.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="9" class="text-center text-muted py-4">No ${tableName} found.</td></tr>`;
       return;
     }
 
@@ -466,6 +483,9 @@
             case 'tasks':
               renderPaginatedTable('tasks', data, pagination, renderTaskRow);
               break;
+            case 'assignments':
+              renderPaginatedTable('assignments', data, pagination, renderAssignmentRow);
+              break;
           }
         }
       };
@@ -489,6 +509,9 @@
               break;
             case 'tasks':
               renderPaginatedTable('tasks', data, pagination, renderTaskRow);
+              break;
+            case 'assignments':
+              renderPaginatedTable('assignments', data, pagination, renderAssignmentRow);
               break;
           }
         }
@@ -523,59 +546,85 @@
 
   function renderAssignments(assignments) {
     const tbody = document.getElementById('assignments-list');
+    const countEl = document.getElementById('assignments-count');
     if (!tbody) return;
     
-    tbody.innerHTML = '';
-    if (!assignments.length) {
-      tbody.innerHTML = `<tr><td colspan="9" class="text-center text-muted py-4">No assignments found.</td></tr>`;
-      return;
+    console.log('Assignments data:', assignments); // Debug log
+    
+    // Store full data for pagination
+    window.assignmentsData = assignments || [];
+    
+    // Initialize pagination
+    if (!window.assignmentsPagination) {
+      window.assignmentsPagination = { page: 1, pageSize: 5 };
     }
+    
+    // Render paginated data
+    renderPaginatedTable('assignments', window.assignmentsData, window.assignmentsPagination, renderAssignmentRow);
+    
+    // Update count
+    if (countEl) countEl.textContent = `${window.assignmentsData.length} assignments`;
+    
+    // Bind pagination controls
+    bindTablePagination('assignments');
+  }
 
-    assignments.forEach((assignment) => {
-      const allocationPercent = percentFmt(assignment.allocation_percentage);
-      const hoursText = `${assignment.allocated_hours}h / ${assignment.actual_hours_used || 0}h used`;
-      const datesText = `${assignment.start_date} → ${assignment.end_date}`;
-      
-      tbody.insertAdjacentHTML('beforeend', `
-        <tr>
-          <td>
-            <div class="fw-semibold">${assignment.resource_name}</div>
-            <div class="text-muted small">ID: ${assignment.resource_id}</div>
-          </td>
-          <td>
-            <span class="badge bg-light text-dark">${assignment.assignment_type}</span>
-          </td>
-          <td>
-            <div class="fw-semibold">${assignment.project_name}</div>
-            <div class="text-muted small">ID: ${assignment.project_id}</div>
-          </td>
-          <td>
-            <div class="fw-semibold">${assignment.task_name}</div>
-            <div class="text-muted small">ID: ${assignment.task_id}</div>
-          </td>
-          <td class="text-center">
-            <div class="fw-semibold">${allocationPercent}</div>
-          </td>
-          <td class="text-center">
-            <div class="small">${hoursText}</div>
-          </td>
-          <td>
-            <div class="small">${datesText}</div>
-          </td>
-          <td>${statusPill(assignment.status)}</td>
-          <td>
+  function renderAssignmentRow(assignment) {
+    const allocationPercent = percentFmt(assignment.allocation_percentage);
+    const usedHours = Number(assignment.calculated_hours_used || assignment.actual_hours_used || 0).toFixed(2);
+    const allocatedHours = Number(assignment.allocated_hours || 0).toFixed(2);
+    const hoursText = `${allocatedHours}h / ${usedHours}h used`;
+    
+    // Format dates for Philippines timezone
+    const startDate = formatDatePH(assignment.start_date);
+    const endDate = formatDatePH(assignment.end_date);
+    const datesText = `${startDate} → ${endDate}`;
+    
+    const isAssigned = assignment.status === 'assigned';
+    
+    return `
+      <tr>
+        <td>
+          <div class="fw-semibold">${assignment.resource_name}</div>
+          <div class="text-muted small">ID: ${assignment.resource_id}</div>
+        </td>
+        <td>
+          <span class="badge bg-light text-dark">${assignment.assignment_type}</span>
+        </td>
+        <td>
+          <div class="fw-semibold">${assignment.project_name}</div>
+          <div class="text-muted small">ID: ${assignment.project_id}</div>
+        </td>
+        <td>
+          <div class="fw-semibold">${assignment.task_name}</div>
+          <div class="text-muted small">ID: ${assignment.task_id}</div>
+        </td>
+        <td class="text-center">
+          <div class="fw-semibold">${allocationPercent}</div>
+        </td>
+        <td class="text-center">
+          <div class="small">${hoursText}</div>
+        </td>
+        <td>
+          <div class="small">${datesText}</div>
+        </td>
+        <td>${statusPill(assignment.status)}</td>
+        <td>
+          ${isAssigned ? `
             <div class="btn-group btn-group-sm">
-              <button class="btn btn-outline-primary" onclick="editAssignment(${assignment.assignment_id})" title="Edit">
-                <i class="fas fa-edit"></i>
+              <button class="btn btn-outline-success" onclick="completeAssignment(${assignment.assignment_id})" title="Complete">
+                <i class="fas fa-check"></i>
               </button>
               <button class="btn btn-outline-danger" onclick="cancelAssignment(${assignment.assignment_id})" title="Cancel">
                 <i class="fas fa-times"></i>
               </button>
             </div>
-          </td>
-        </tr>
-      `);
-    });
+          ` : `
+            <span class="text-muted small">No actions</span>
+          `}
+        </td>
+      </tr>
+    `;
   }
 
   function bindAssignmentControls() {
@@ -608,15 +657,47 @@
     }
   }
 
-  function editAssignment(assignmentId) {
-    showToast('Edit Assignment', `Assignment ID: ${assignmentId}`, 'info');
-    // TODO: Implement edit functionality
+  async function completeAssignment(assignmentId) {
+    if (confirm('Are you sure you want to mark this assignment as completed?')) {
+      try {
+        await fetchJSON(`assignments.php?id=${assignmentId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'complete' })
+        });
+        showToast('Assignment Completed', `Assignment ID: ${assignmentId}`, 'success');
+        // Reload assignments to reflect the change
+        const filterSelect = document.getElementById('assignment-filter');
+        const statusSelect = document.getElementById('assignment-status');
+        const filter = filterSelect?.value || 'all';
+        const status = statusSelect?.value || 'assigned';
+        loadAssignments(filter, status);
+      } catch (err) {
+        console.error(err);
+        showToast('Complete failed', err.message, 'danger');
+      }
+    }
   }
 
-  function cancelAssignment(assignmentId) {
+  async function cancelAssignment(assignmentId) {
     if (confirm('Are you sure you want to cancel this assignment?')) {
-      showToast('Cancel Assignment', `Assignment ID: ${assignmentId}`, 'warning');
-      // TODO: Implement cancel functionality
+      try {
+        await fetchJSON(`assignments.php?id=${assignmentId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'cancel' })
+        });
+        showToast('Assignment Cancelled', `Assignment ID: ${assignmentId}`, 'warning');
+        // Reload assignments to reflect the change
+        const filterSelect = document.getElementById('assignment-filter');
+        const statusSelect = document.getElementById('assignment-status');
+        const filter = filterSelect?.value || 'all';
+        const status = statusSelect?.value || 'assigned';
+        loadAssignments(filter, status);
+      } catch (err) {
+        console.error(err);
+        showToast('Cancel failed', err.message, 'danger');
+      }
     }
   }
 
@@ -985,11 +1066,28 @@
     loadAssignments();
   }
 
+  // Auto-refresh assignments for real-time updates
+  function startRealTimeUpdates() {
+    // Refresh assignments every 30 seconds for real-time hour tracking
+    setInterval(() => {
+      const filterSelect = document.getElementById('assignment-filter');
+      const statusSelect = document.getElementById('assignment-status');
+      const filter = filterSelect?.value || 'all';
+      const status = statusSelect?.value || 'assigned';
+      loadAssignments(filter, status);
+    }, 30000); // 30 seconds
+  }
+
   document.addEventListener('DOMContentLoaded', () => {
     bindSearchInputs();
     bindRefreshButtons();
     bindAssignmentForm();
     bindAssignmentControls();
     loadAll();
+    startRealTimeUpdates(); // Start real-time updates
   });
+
+  // Expose functions globally for onclick handlers
+  window.completeAssignment = completeAssignment;
+  window.cancelAssignment = cancelAssignment;
 })();

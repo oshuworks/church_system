@@ -6,6 +6,8 @@ $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 if ($method === 'GET') {
     $projectId = isset($_GET['project_id']) ? (int) $_GET['project_id'] : 0;
     $taskId = isset($_GET['task_id']) ? (int) $_GET['task_id'] : 0;
+    $assignmentType = isset($_GET['assignment_type']) ? trim($_GET['assignment_type']) : '';
+    $status = isset($_GET['status']) ? trim($_GET['status']) : '';
 
     $conditions = [];
     $types = '';
@@ -21,6 +23,16 @@ if ($method === 'GET') {
         $types .= 'i';
         $params[] = $taskId;
     }
+    if (!empty($assignmentType) && $assignmentType !== 'all') {
+        $conditions[] = "ta.assignment_type = ?";
+        $types .= 's';
+        $params[] = $assignmentType;
+    }
+    if (!empty($status) && $status !== 'assigned') {
+        $conditions[] = "ta.status = ?";
+        $types .= 's';
+        $params[] = $status;
+    }
 
     $where = $conditions ? 'WHERE ' . implode(' AND ', $conditions) : '';
 
@@ -33,7 +45,7 @@ if ($method === 'GET') {
         ta.task_id,
         ta.allocation_percentage,
         ta.allocated_hours,
-        ta.actual_hours_used,
+        COALESCE(ta.actual_hours_used, 0) as actual_hours_used,
         ta.start_date,
         ta.end_date,
         ta.status,
@@ -44,7 +56,18 @@ if ($method === 'GET') {
             WHEN ta.assignment_type = 'employee' THEN e.employee_name
             WHEN ta.assignment_type = 'equipment' THEN eq.equipment_name
             WHEN ta.assignment_type = 'budget' THEN CONCAT('Budget: ', bc.category_name)
-        END AS resource_name
+        END AS resource_name,
+        -- Calculate elapsed hours based on Philippines timezone (8 working hours per day)
+        CASE 
+            WHEN ta.status IN ('completed', 'cancelled') THEN COALESCE(ta.actual_hours_used, 0)
+            WHEN ta.start_date > CURDATE() THEN 0
+            WHEN ta.end_date < CURDATE() THEN 
+                GREATEST(COALESCE(ta.actual_hours_used, 0), 
+                    DATEDIFF(LEAST(ta.end_date, CURDATE()), ta.start_date) * 8 * (ta.allocation_percentage / 100))
+            ELSE 
+                GREATEST(COALESCE(ta.actual_hours_used, 0), 
+                    (DATEDIFF(CURDATE(), ta.start_date) + 1) * 8 * (ta.allocation_percentage / 100))
+        END as calculated_hours_used
     FROM task_assignments ta
     JOIN tasks t ON t.task_id = ta.task_id
     JOIN projects p ON p.project_id = ta.project_id
@@ -164,13 +187,59 @@ if ($method === 'POST') {
     $insertSql = "
     INSERT INTO task_assignments (task_id, project_id, assignment_type, resource_id, allocation_percentage, allocated_hours, start_date, end_date, status, notes)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'assigned', ?)";
-    runQuery($mysqli, $insertSql, ['iisidddds', [$taskId, $projectId, $assignmentType, $resourceId, $allocationPercentage, $allocatedHours, $startDate, $endDate, $notes]]);
+    
+    runQuery($mysqli, $insertSql, ['iisidssss', [$taskId, $projectId, $assignmentType, $resourceId, $allocationPercentage, $allocatedHours, $startDate, $endDate, $notes]]);
 
     respond([
         'message' => 'Assignment created',
         'resource_name' => $resourceName,
         'assignment_type' => $assignmentType
     ], 201);
+}
+
+if ($method === 'PUT') {
+    // Handle complete or cancel assignment
+    $input = json_decode(file_get_contents('php://input'), true) ?? [];
+    $input = sanitizeInput($input);
+    
+    $assignmentId = isset($_GET['id']) ? (int) $_GET['id'] : 0;
+    $action = $input['action'] ?? '';
+    
+    if ($assignmentId <= 0) {
+        respond(['error' => 'Assignment ID required'], 400);
+    }
+    
+    if (!in_array($action, ['complete', 'cancel'], true)) {
+        respond(['error' => 'Invalid action. Use "complete" or "cancel"'], 400);
+    }
+    
+    // Check if assignment exists
+    $assignment = fetchAllAssoc(runQuery($mysqli, "SELECT * FROM task_assignments WHERE assignment_id = ?", ['i', [$assignmentId]]));
+    if (empty($assignment)) {
+        respond(['error' => 'Assignment not found'], 404);
+    }
+    
+    $currentStatus = $assignment[0]['status'];
+    
+    // Validate status transitions
+    if ($action === 'complete' && $currentStatus !== 'assigned') {
+        respond(['error' => 'Only assigned assignments can be completed'], 400);
+    }
+    
+    if ($action === 'cancel' && !in_array($currentStatus, ['assigned'], true)) {
+        respond(['error' => 'Only assigned assignments can be cancelled'], 400);
+    }
+    
+    $newStatus = $action === 'complete' ? 'completed' : 'cancelled';
+    
+    // Update assignment status
+    runQuery($mysqli, "UPDATE task_assignments SET status = ? WHERE assignment_id = ?", ['si', [$newStatus, $assignmentId]]);
+    
+    respond([
+        'message' => "Assignment {$newStatus} successfully",
+        'assignment_id' => $assignmentId,
+        'new_status' => $newStatus
+    ]);
 }
 
 respond(['error' => 'Method not allowed'], 405);
