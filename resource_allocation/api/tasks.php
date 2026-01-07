@@ -33,11 +33,23 @@ SELECT
     t.start_date,
     t.end_date,
     t.estimated_hours,
-    t.actual_hours,
     t.status,
     t.priority,
-    t.progress_percentage,
     p.project_name,
+    -- Calculate dynamic progress based on assignments and task status
+    CASE 
+        WHEN t.status = 'completed' THEN 100
+        WHEN t.status = 'cancelled' THEN 0
+        WHEN t.status = 'not_started' THEN 0
+        WHEN t.status = 'blocked' THEN 0
+        WHEN t.estimated_hours > 0 AND t.status = 'in_progress' THEN 
+            ROUND((SELECT SUM(COALESCE(ta.actual_hours_used, 0)) 
+                  FROM task_assignments ta 
+                  WHERE ta.task_id = t.task_id 
+                  AND ta.status != 'deleted'
+                  AND ta.status IN ('assigned', 'in_progress', 'completed')) / t.estimated_hours * 100, 2)
+        ELSE 0
+    END as calculated_progress_percentage,
     (SELECT COUNT(*) 
      FROM task_assignments ta 
      WHERE ta.task_id = t.task_id 
@@ -67,7 +79,7 @@ foreach ($tasks as &$task) {
         LEFT JOIN equipment eq ON eq.equipment_id = ta.resource_id AND ta.assignment_type = 'equipment'
         LEFT JOIN project_budgets pb ON pb.budget_id = ta.resource_id AND ta.assignment_type = 'budget'
         LEFT JOIN budget_categories bc ON bc.category_id = pb.category_id
-        WHERE ta.task_id = ? AND ta.status = 'assigned'";
+        WHERE ta.task_id = ? AND ta.status = 'assigned' AND ta.status != 'deleted'";
     
     $assignStmt = runQuery($mysqli, $assignedResourcesSql, ['i', [$task['task_id']]]);
     $assignments = fetchAllAssoc($assignStmt);

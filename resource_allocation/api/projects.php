@@ -12,7 +12,24 @@ SELECT
     p.priority,
     p.budget_allocated,
     COALESCE(SUM(pb.spent_amount), 0) AS total_spent,
-    COALESCE(AVG(t.progress_percentage), 0) AS avg_progress,
+    -- Calculate dynamic progress from tasks
+    COALESCE(
+        CASE 
+            WHEN COUNT(t.task_id) = 0 THEN 0
+            ELSE ROUND(
+                (SUM(CASE 
+                    WHEN t.status = 'completed' THEN t.estimated_hours
+                    WHEN t.status IN ('cancelled', 'not_started', 'blocked') THEN 0
+                    ELSE COALESCE(
+                        (SELECT SUM(COALESCE(ta.actual_hours_used, 0)) 
+                         FROM task_assignments ta 
+                         WHERE ta.task_id = t.task_id), 0
+                    )
+                END) / SUM(t.estimated_hours)) * 100, 2
+            )
+        END, 
+        0
+    ) AS avg_progress,
     (SELECT COUNT(*) 
      FROM task_assignments ta 
      WHERE ta.project_id = p.project_id 

@@ -158,6 +158,21 @@
     }
   }
 
+  function populateTasksProjectFilter() {
+    const select = document.getElementById('tasks-project-filter');
+    if (!select) return;
+    const formatted = projectsCache.map((p) => ({
+      value: p.project_id,
+      label: `${p.project_name} (${p.status})`,
+    }));
+    setSelectOptions(
+      select,
+      formatted,
+      (p) => p.label,
+      'All Projects'
+    );
+  }
+
   function populateTaskSelect(projectId = 0, overrideTasks = null) {
     const select = document.getElementById('assign-task');
     if (!select) return;
@@ -330,7 +345,6 @@
   }
 
   function renderProjectRow(p) {
-    const progress = Number(p.avg_progress ?? 0).toFixed(0);
     const totalAssignments = p.total_assignments || 0;
     const employees = p.employees_assigned || 0;
     const equipment = p.equipment_assigned || 0;
@@ -339,9 +353,9 @@
     let resourceSummary = '';
     if (totalAssignments > 0) {
       const parts = [];
-      if (employees > 0) parts.push(`${employees} 👤`);
-      if (equipment > 0) parts.push(`${equipment} 🛠️`);
-      if (budgets > 0) parts.push(`${budgets} 💰`);
+      if (employees > 0) parts.push(`${employees} employees`);
+      if (equipment > 0) parts.push(`${equipment} equipment`);
+      if (budgets > 0) parts.push(`${budgets} budgets`);
       resourceSummary = parts.join(' · ');
     } else {
       resourceSummary = 'None';
@@ -354,14 +368,7 @@
         <td>${priorityChip(p.priority)}</td>
         <td><small class="text-muted">${p.start_date} → ${p.end_date}</small></td>
         <td class="text-center">
-          <div class="progress" style="height: 8px;">
-            <div class="progress-bar" role="progressbar" style="width: ${progress}%;" aria-valuenow="${progress}" aria-valuemin="0" aria-valuemax="100"></div>
-          </div>
-          <small class="text-muted">${progress}%</small>
-        </td>
-        <td class="text-center">
           <div class="fw-semibold">${totalAssignments}</div>
-          <div class="text-muted small">${resourceSummary}</div>
         </td>
         <td class="text-end">
           <div>${moneyFmt.format(p.budget_allocated ?? 0)}</div>
@@ -395,9 +402,15 @@
   }
 
   function renderTaskRow(t) {
-    const progress = Number(t.progress_percentage ?? 0).toFixed(0);
     const assignedCount = t.assigned_count || 0;
     const assignedResources = t.assigned_resources || 'None';
+    const progress = parseFloat(t.calculated_progress_percentage) || 0;
+    
+    // Determine progress color
+    let progressColor = 'bg-danger';
+    if (progress >= 100) progressColor = 'bg-success';
+    else if (progress >= 75) progressColor = 'bg-info';
+    else if (progress >= 50) progressColor = 'bg-warning';
     
     return `
       <tr>
@@ -406,11 +419,11 @@
         <td>${statusPill(t.status)}</td>
         <td>${priorityChip(t.priority)}</td>
         <td><small class="text-muted">${t.start_date} → ${t.end_date}</small></td>
-        <td class="text-center">
-          <div class="progress" style="height: 8px;">
-            <div class="progress-bar bg-success" role="progressbar" style="width: ${progress}%;" aria-valuenow="${progress}" aria-valuemin="0" aria-valuemax="100"></div>
+        <td>
+          <div class="progress mb-1" style="height: 8px;">
+            <div class="progress-bar ${progressColor}" style="width: ${Math.min(progress, 100)}%"></div>
           </div>
-          <small class="text-muted">${progress}%</small>
+          <small class="text-muted">${progress.toFixed(1)}% complete</small>
         </td>
         <td class="text-center">
           <div class="fw-semibold">${assignedCount}</div>
@@ -438,7 +451,7 @@
     tbody.innerHTML = '';
     
     if (!pageItems.length) {
-      tbody.innerHTML = `<tr><td colspan="9" class="text-center text-muted py-4">No ${tableName} found.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-4">No ${tableName} found.</td></tr>`;
       return;
     }
 
@@ -573,7 +586,14 @@
     const allocationPercent = percentFmt(assignment.allocation_percentage);
     const usedHours = Number(assignment.calculated_hours_used || assignment.actual_hours_used || 0).toFixed(2);
     const allocatedHours = Number(assignment.allocated_hours || 0).toFixed(2);
-    const hoursText = `${allocatedHours}h / ${usedHours}h used`;
+    
+    // Format hours/budget text based on assignment type
+    let hoursText;
+    if (assignment.assignment_type === 'budget') {
+      hoursText = `${moneyFmt.format(allocatedHours)} / ${moneyFmt.format(usedHours)} used`;
+    } else {
+      hoursText = `${allocatedHours}h / ${usedHours}h used`;
+    }
     
     // Format dates for Philippines timezone
     const startDate = formatDatePH(assignment.start_date);
@@ -620,7 +640,11 @@
               </button>
             </div>
           ` : `
-            <span class="text-muted small">No actions</span>
+            <div class="btn-group btn-group-sm">
+              <button class="btn btn-outline-danger" onclick="deleteAssignment(${assignment.assignment_id})" title="Delete">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
           `}
         </td>
       </tr>
@@ -631,6 +655,8 @@
     const filterSelect = document.getElementById('assignment-filter');
     const statusSelect = document.getElementById('assignment-status');
     const refreshBtn = document.getElementById('assignments-refresh');
+    const deleteAllCompleted = document.getElementById('delete-all-completed');
+    const deleteAllCancelled = document.getElementById('delete-all-cancelled');
 
     if (filterSelect) {
       filterSelect.addEventListener('change', () => {
@@ -644,6 +670,7 @@
       statusSelect.addEventListener('change', () => {
         const filter = filterSelect?.value || 'all';
         const status = statusSelect.value;
+        updateBulkDeleteButtons(status);
         loadAssignments(filter, status);
       });
     }
@@ -654,6 +681,23 @@
         const status = statusSelect?.value || 'assigned';
         loadAssignments(filter, status);
       });
+    }
+
+    if (deleteAllCompleted) {
+      deleteAllCompleted.addEventListener('click', () => {
+        deleteAllAssignments('completed');
+      });
+    }
+
+    if (deleteAllCancelled) {
+      deleteAllCancelled.addEventListener('click', () => {
+        deleteAllAssignments('cancelled');
+      });
+    }
+
+    // Initialize bulk delete buttons visibility
+    if (statusSelect) {
+      updateBulkDeleteButtons(statusSelect.value);
     }
   }
 
@@ -666,12 +710,21 @@
           body: JSON.stringify({ action: 'complete' })
         });
         showToast('Assignment Completed', `Assignment ID: ${assignmentId}`, 'success');
-        // Reload assignments to reflect the change
+        
+        // Reload all related data to reflect the utilization change
         const filterSelect = document.getElementById('assignment-filter');
         const statusSelect = document.getElementById('assignment-status');
         const filter = filterSelect?.value || 'all';
         const status = statusSelect?.value || 'assigned';
-        loadAssignments(filter, status);
+        
+        // Reload assignments, employees, equipment, utilization, and summary
+        await Promise.all([
+          loadAssignments(filter, status),
+          loadEmployees(),
+          loadEquipment(),
+          loadUtilization(),
+          loadSummary()
+        ]);
       } catch (err) {
         console.error(err);
         showToast('Complete failed', err.message, 'danger');
@@ -688,15 +741,101 @@
           body: JSON.stringify({ action: 'cancel' })
         });
         showToast('Assignment Cancelled', `Assignment ID: ${assignmentId}`, 'warning');
-        // Reload assignments to reflect the change
+        
+        // Reload all related data to reflect the utilization change
         const filterSelect = document.getElementById('assignment-filter');
         const statusSelect = document.getElementById('assignment-status');
         const filter = filterSelect?.value || 'all';
         const status = statusSelect?.value || 'assigned';
-        loadAssignments(filter, status);
+        
+        // Reload assignments, employees, equipment, utilization, and summary
+        await Promise.all([
+          loadAssignments(filter, status),
+          loadEmployees(),
+          loadEquipment(),
+          loadUtilization(),
+          loadSummary()
+        ]);
       } catch (err) {
         console.error(err);
         showToast('Cancel failed', err.message, 'danger');
+      }
+    }
+  }
+
+  async function deleteAssignment(assignmentId) {
+    if (confirm('Are you sure you want to delete this assignment? This action cannot be undone.')) {
+      try {
+        await fetchJSON(`assignments.php?id=${assignmentId}`, {
+          method: 'DELETE'
+        });
+        showToast('Assignment Deleted', `Assignment ID: ${assignmentId}`, 'success');
+        
+        // Reload all related data to reflect the utilization change
+        const filterSelect = document.getElementById('assignment-filter');
+        const statusSelect = document.getElementById('assignment-status');
+        const filter = filterSelect?.value || 'all';
+        const status = statusSelect?.value || 'assigned';
+        
+        // Reload assignments, employees, equipment, utilization, and summary
+        await Promise.all([
+          loadAssignments(filter, status),
+          loadEmployees(),
+          loadEquipment(),
+          loadUtilization(),
+          loadSummary()
+        ]);
+      } catch (err) {
+        console.error(err);
+        showToast('Delete failed', err.message, 'danger');
+      }
+    }
+  }
+
+  async function deleteAllAssignments(status) {
+    const statusText = status === 'completed' ? 'completed' : 'cancelled';
+    if (confirm(`Are you sure you want to delete ALL ${statusText} assignments? This action cannot be undone.`)) {
+      try {
+        const response = await fetchJSON(`assignments.php?bulk=${status}`, {
+          method: 'DELETE'
+        });
+        showToast('Bulk Delete Successful', `Deleted ${response.deleted_count} ${statusText} assignments`, 'success');
+        
+        // Reload all related data to reflect the utilization change
+        const filterSelect = document.getElementById('assignment-filter');
+        const statusSelect = document.getElementById('assignment-status');
+        const filter = filterSelect?.value || 'all';
+        const currentStatus = statusSelect?.value || 'assigned';
+        
+        // Reload assignments, employees, equipment, utilization, and summary
+        await Promise.all([
+          loadAssignments(filter, currentStatus),
+          loadEmployees(),
+          loadEquipment(),
+          loadUtilization(),
+          loadSummary()
+        ]);
+      } catch (err) {
+        console.error(err);
+        showToast('Bulk delete failed', err.message, 'danger');
+      }
+    }
+  }
+
+  function updateBulkDeleteButtons(status) {
+    const deleteAllCompleted = document.getElementById('delete-all-completed');
+    const deleteAllCancelled = document.getElementById('delete-all-cancelled');
+    
+    if (deleteAllCompleted && deleteAllCancelled) {
+      // Hide both buttons by default
+      deleteAllCompleted.style.display = 'none';
+      deleteAllCancelled.style.display = 'none';
+      
+      // Show appropriate button based on status
+      if (status === 'completed') {
+        deleteAllCompleted.style.display = 'inline-block';
+      } else if (status === 'cancelled') {
+        deleteAllCancelled.style.display = 'inline-block';
       }
     }
   }
@@ -729,6 +868,7 @@
       projectsCache = data.projects || [];
       renderProjects(projectsCache);
       populateProjectSelect();
+      populateTasksProjectFilter();
     } catch (err) {
       console.error(err);
       showToast('Project load error', err.message, 'danger');
@@ -926,11 +1066,39 @@
     const note = document.getElementById('assign-availability-note');
     const startInput = document.getElementById('assign-start');
     const endInput = document.getElementById('assign-end');
+    const hoursContainer = document.getElementById('hours-field-container');
+    const hoursLabel = document.getElementById('hours-label');
+    const hoursInput = document.getElementById('assign-hours');
 
     if (startInput && endInput) {
       const today = new Date().toISOString().split('T')[0];
       if (!startInput.value) startInput.value = today;
       if (!endInput.value) endInput.value = today;
+    }
+
+    // Function to update hours field based on assignment type
+    function updateHoursField(assignmentType) {
+      if (hoursContainer && hoursLabel && hoursInput) {
+        if (assignmentType === 'budget') {
+          // Show hours field for budgets with amount label
+          hoursContainer.style.display = 'block';
+          hoursLabel.textContent = 'Total Amount to Accomplish Task';
+          hoursInput.required = true;
+          // Set a more appropriate default for budget amounts
+          if (hoursInput.value === '10') {
+            hoursInput.value = '1000';
+          }
+        } else {
+          // Show hours field for employees and equipment
+          hoursContainer.style.display = 'block';
+          hoursLabel.textContent = 'Total Hours to Accomplish Task';
+          hoursInput.required = true;
+          // Reset to hours default if still at budget default
+          if (hoursInput.value === '1000') {
+            hoursInput.value = '10';
+          }
+        }
+      }
     }
 
     if (projectSelect) {
@@ -945,9 +1113,14 @@
 
     if (typeSelect) {
       typeSelect.addEventListener('change', () => {
+        const assignmentType = typeSelect?.value;
+        updateHoursField(assignmentType);
         const projectId = Number(projectSelect?.value || 0);
         loadAssignmentOptions(projectId);
       });
+      
+      // Initialize the hours field based on the default assignment type
+      updateHoursField(typeSelect.value);
     }
 
     if (form) {
@@ -982,9 +1155,17 @@
           return;
         }
         
-        if (allocatedHours < 0.1) {
-          showToast('Invalid hours', 'Allocated hours must be at least 0.1', 'warning');
-          return;
+        // Validate hours/amount based on assignment type
+        if (assignmentType === 'budget') {
+          if (allocatedHours < 1) {
+            showToast('Invalid amount', 'Total amount must be at least 1', 'warning');
+            return;
+          }
+        } else {
+          if (allocatedHours < 1) {
+            showToast('Invalid hours', 'Allocated hours must be at least 1', 'warning');
+            return;
+          }
         }
 
         const today = new Date();
@@ -996,13 +1177,16 @@
           return;
         }
 
+        // For budget assignments, send the amount as allocated_hours
+        const finalAllocatedHours = assignmentType === 'budget' ? allocatedHours : allocatedHours;
+        
         submitAssignment({
           project_id: projectId,
           task_id: taskId,
           assignment_type: assignmentType,
           resource_id: resourceId,
           allocation_percentage,
-          allocated_hours,
+          allocated_hours: finalAllocatedHours,
           start_date,
           end_date,
           notes,
@@ -1019,8 +1203,15 @@
         body: JSON.stringify(payload),
       });
       showToast('Assigned', 'Resource added to task', 'success');
-      loadTasks(payload.project_id);
-      loadUtilization();
+      
+      // Reload all related data to reflect the utilization change
+      await Promise.all([
+        loadTasks(payload.project_id),
+        loadEmployees(),
+        loadEquipment(),
+        loadUtilization(),
+        loadSummary()
+      ]);
     } catch (err) {
       console.error(err);
       showToast('Assign failed', err.message, 'danger');
@@ -1037,11 +1228,25 @@
     if (equipmentSearch) {
       equipmentSearch.addEventListener('input', (e) => loadEquipment(e.target.value));
     }
+
+    // Bind tasks project filter
+    const tasksProjectFilter = document.getElementById('tasks-project-filter');
+    if (tasksProjectFilter) {
+      tasksProjectFilter.addEventListener('change', (e) => {
+        const projectId = Number(e.target.value);
+        loadTasks(projectId);
+      });
+    }
   }
 
   function bindRefreshButtons() {
     const refreshBtn = document.getElementById('refresh-btn');
     const assignRefresh = document.getElementById('assign-refresh');
+    const refreshEmployeesBtn = document.getElementById('refresh-employees-btn');
+    const refreshEquipmentBtn = document.getElementById('refresh-equipment-btn');
+    const refreshProjectsBtn = document.getElementById('refresh-projects-btn');
+    const refreshTasksBtn = document.getElementById('refresh-tasks-btn');
+    
     if (refreshBtn) {
       refreshBtn.addEventListener('click', () => {
         showToast('Refreshing', 'Fetching the latest data...', 'info');
@@ -1053,6 +1258,37 @@
       const projectId = projectSelect ? Number(projectSelect.value) : 0;
       loadAssignmentOptions(projectId);
     });
+    
+    // Tab-specific refresh buttons
+    if (refreshEmployeesBtn) {
+      refreshEmployeesBtn.addEventListener('click', () => {
+        showToast('Refreshing Employees', 'Fetching latest employee data...', 'info');
+        loadEmployees();
+      });
+    }
+    
+    if (refreshEquipmentBtn) {
+      refreshEquipmentBtn.addEventListener('click', () => {
+        showToast('Refreshing Equipment', 'Fetching latest equipment data...', 'info');
+        loadEquipment();
+      });
+    }
+    
+    if (refreshProjectsBtn) {
+      refreshProjectsBtn.addEventListener('click', () => {
+        showToast('Refreshing Projects', 'Fetching latest project data...', 'info');
+        loadProjects();
+      });
+    }
+    
+    if (refreshTasksBtn) {
+      refreshTasksBtn.addEventListener('click', () => {
+        showToast('Refreshing Tasks', 'Fetching latest task data...', 'info');
+        const projectSelect = document.getElementById('tasks-project-filter');
+        const projectId = projectSelect ? Number(projectSelect.value) : 0;
+        loadTasks(projectId);
+      });
+    }
   }
 
   function loadAll() {
@@ -1090,4 +1326,6 @@
   // Expose functions globally for onclick handlers
   window.completeAssignment = completeAssignment;
   window.cancelAssignment = cancelAssignment;
+  window.deleteAssignment = deleteAssignment;
+  window.deleteAllAssignments = deleteAllAssignments;
 })();

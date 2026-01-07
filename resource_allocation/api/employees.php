@@ -38,35 +38,79 @@ SELECT
     e.current_workload,
     e.utilization_percentage,
     e.status,
-    ru.utilization_percentage AS latest_utilization,
-    ru.workload_level,
-    ru.date AS utilization_date,
+    -- Calculate dynamic utilization from current assignments
     (SELECT COUNT(*) 
      FROM task_assignments ta 
      WHERE ta.resource_id = e.employee_id 
      AND ta.assignment_type = 'employee' 
-     AND ta.status = 'assigned') as current_assignments,
+     AND ta.status IN ('assigned', 'in_progress')
+     AND ta.start_date <= CURDATE()
+     AND ta.end_date >= CURDATE()) as current_assignments,
+    (SELECT SUM(
+        CASE 
+            WHEN ta.status = 'completed' THEN ta.actual_hours_used
+            WHEN ta.start_date > CURDATE() THEN 0
+            WHEN ta.end_date < CURDATE() THEN 
+                GREATEST(ta.actual_hours_used, 
+                    -- Calculate workdays between start and end dates
+                    (5 * FLOOR(DATEDIFF(LEAST(ta.end_date, CURDATE()), ta.start_date) / 7) + 
+                     LEAST(DATEDIFF(LEAST(ta.end_date, CURDATE()), ta.start_date) % 7, 5)) * 
+                    e.max_work_hours_per_day * (ta.allocation_percentage / 100))
+            ELSE 
+                GREATEST(ta.actual_hours_used, 
+                    -- Calculate workdays from start to today
+                    (5 * FLOOR(DATEDIFF(CURDATE(), ta.start_date) / 7) + 
+                     LEAST(DATEDIFF(CURDATE(), ta.start_date) % 7, 5) + 1) * 
+                    e.max_work_hours_per_day * (ta.allocation_percentage / 100))
+        END
+     )
+     FROM task_assignments ta 
+     WHERE ta.resource_id = e.employee_id 
+     AND ta.assignment_type = 'employee' 
+     AND ta.status IN ('assigned', 'in_progress', 'completed')
+     AND ta.start_date <= CURDATE()
+     AND ta.end_date >= CURDATE()) as calculated_hours_used,
     (SELECT GROUP_CONCAT(DISTINCT p.project_name SEPARATOR ', ')
      FROM task_assignments ta
      JOIN projects p ON p.project_id = ta.project_id
      WHERE ta.resource_id = e.employee_id 
      AND ta.assignment_type = 'employee' 
-     AND ta.status = 'assigned') as assigned_projects
+     AND ta.status IN ('assigned', 'in_progress')
+     AND ta.start_date <= CURDATE()
+     AND ta.end_date >= CURDATE()) as assigned_projects
 FROM employees e
-LEFT JOIN resource_utilization ru
-    ON ru.resource_type = 'employee'
-   AND ru.resource_id = e.employee_id
-   AND ru.date = (
-        SELECT MAX(r2.date)
-        FROM resource_utilization r2
-        WHERE r2.resource_type = 'employee'
-          AND r2.resource_id = e.employee_id
-   )
 $where
 ORDER BY e.employee_name ASC";
 
 $stmt = runQuery($mysqli, $sql, $types ? [$types, $params] : []);
 $employees = fetchAllAssoc($stmt);
+
+// Calculate workload level for each employee
+foreach ($employees as &$employee) {
+    $totalHours = $employee['max_work_hours_per_day'] * 5; // 5-day work week
+    $hoursUsed = $employee['calculated_hours_used'] ?? 0;
+    
+    if ($totalHours <= 0) {
+        $utilizationPercentage = 0;
+        $workloadLevel = 'underutilized';
+    } else {
+        $utilizationPercentage = ($hoursUsed / $totalHours) * 100;
+        
+        if ($utilizationPercentage < 60) {
+            $workloadLevel = 'underutilized';
+        } elseif ($utilizationPercentage >= 60 && $utilizationPercentage <= 85) {
+            $workloadLevel = 'optimal';
+        } elseif ($utilizationPercentage > 85 && $utilizationPercentage <= 100) {
+            $workloadLevel = 'overloaded';
+        } else {
+            $workloadLevel = 'critical';
+        }
+    }
+    
+    $employee['latest_utilization'] = round($utilizationPercentage, 2);
+    $employee['workload_level'] = $workloadLevel;
+    $employee['utilization_date'] = date('Y-m-d');
+}
 
 respond(['employees' => $employees]);
 

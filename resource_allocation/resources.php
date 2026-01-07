@@ -96,10 +96,7 @@ $activePage = 'resources';
             <label class="form-label">Project</label>
             <select class="form-select" id="assign-project" required></select>
           </div>
-          <div class="col-md-4">
-            <label class="form-label">Task</label>
-            <select class="form-select" id="assign-task" required></select>
-          </div>
+          
           <div class="col-md-4">
             <label class="form-label">Assignment Type</label>
             <select class="form-select" id="assign-type" required>
@@ -108,17 +105,23 @@ $activePage = 'resources';
               <option value="budget">Budget</option>
             </select>
           </div>
+
+          <div class="col-md-4">
+            <label class="form-label">Task</label>
+            <select class="form-select" id="assign-task" required></select>
+          </div>
+
           <div class="col-md-6">
             <label class="form-label">Resource</label>
             <select class="form-select" id="assign-resource" required></select>
           </div>
           <div class="col-md-3">
-            <label class="form-label">Allocation %</label>
+            <label class="form-label">Task Allocation %</label>
             <input type="number" class="form-control" id="assign-percentage" value="100" min="1" max="150" step="1" required>
           </div>
-          <div class="col-md-3">
-            <label class="form-label">Allocated Hours</label>
-            <input type="number" class="form-control" id="assign-hours" value="10" min="1" step="1" required>
+          <div class="col-md-3" id="hours-field-container">
+            <label class="form-label" id="hours-label">Total Hours to Accomplish Task</label>
+            <input type="number" class="form-control" id="assign-hours" value="10" min="1" step="0.01" required>
           </div>
           <div class="col-md-3">
             <label class="form-label">Start Date</label>
@@ -193,7 +196,7 @@ $activePage = 'resources';
             <h5 class="mb-0">Resource Assignments</h5>
             <small class="text-muted">Detailed view of all current resource allocations</small>
           </div>
-          <div>
+          <div class="d-flex align-items-center">
             <select class="form-select form-select-sm d-inline-block w-auto me-2" id="assignment-filter">
               <option value="all">All Assignments</option>
               <option value="employee">Employees</option>
@@ -205,6 +208,12 @@ $activePage = 'resources';
               <option value="completed">Completed</option>
               <option value="cancelled">Cancelled</option>
             </select>
+            <button class="btn btn-outline-danger btn-sm me-2" id="delete-all-completed" style="display: none;" title="Delete All Completed">
+              <i class="fas fa-trash-alt me-1"></i>Delete All Completed
+            </button>
+            <button class="btn btn-outline-danger btn-sm" id="delete-all-cancelled" style="display: none;" title="Delete All Cancelled">
+              <i class="fas fa-trash-alt me-1"></i>Delete All Cancelled
+            </button>
           </div>
         </div>
 
@@ -217,7 +226,7 @@ $activePage = 'resources';
                 <th>Project</th>
                 <th>Task</th>
                 <th class="text-center">Allocation</th>
-                <th class="text-center">Hours</th>
+                <th class="text-center">Hour/Amount</th>
                 <th>Dates</th>
                 <th>Status</th>
                 <th>Actions</th>
@@ -347,13 +356,12 @@ $activePage = 'resources';
                     <th>Status</th>
                     <th>Priority</th>
                     <th>Dates</th>
-                    <th class="text-center">Progress</th>
                     <th class="text-center">Resources</th>
                     <th class="text-end">Budget</th>
                   </tr>
                 </thead>
                 <tbody id="projects-body">
-                  <tr><td colspan="7" class="text-center text-muted py-4">Loading projects...</td></tr>
+                  <tr><td colspan="6" class="text-center text-muted py-4">Loading projects...</td></tr>
                 </tbody>
               </table>
             </div>
@@ -372,8 +380,18 @@ $activePage = 'resources';
 
           <div class="tab-pane fade" id="tasks-pane" role="tabpanel">
             <div class="d-flex justify-content-between align-items-center mb-3">
-              <h5 class="mb-0">Tasks</h5>
-              <span class="text-muted small">Cross-project task tracker</span>
+              <div>
+                <h5 class="mb-0">Tasks</h5>
+                <span class="text-muted small">Cross-project task tracker</span>
+              </div>
+              <div class="d-flex align-items-center gap-2">
+                <select class="form-select form-select-sm d-inline-block w-auto" id="tasks-project-filter">
+                  <option value="0">All Projects</option>
+                </select>
+                <button class="btn btn-outline-secondary btn-sm" id="refresh-tasks-btn" title="Refresh Tasks">
+                  <i class="fas fa-rotate"></i>
+                </button>
+              </div>
             </div>
             <div class="table-responsive">
               <table class="table table-hover align-middle">
@@ -384,7 +402,7 @@ $activePage = 'resources';
                     <th>Status</th>
                     <th>Priority</th>
                     <th>Dates</th>
-                    <th class="text-center">Progress</th>
+                    <th>Progress</th>
                     <th class="text-center">Assigned Resources</th>
                   </tr>
                 </thead>
