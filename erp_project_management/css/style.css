@@ -1,0 +1,633 @@
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #fefefe;
+    color: #333;
+}
+
+/* Navigation bar styles are now centralized in css/navbar.css */
+
+.btn-primary {
+    background-color: #60c3e6;
+    border-color: #1a6985;
+    color: #000000;
+}
+
+.btn-primary:hover {
+    background-color: #7bd4f5;
+    border-color: #145a73;
+    color: #000000;
+}
+
+.alert {
+    transition: opacity 0.5s ease-in-out;
+}
+
+/* Toast Actions */
+.toast-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.toast-actions .btn {
+    padding: 4px 10px;
+    font-size: 0.8rem;
+    border-radius: 4px;
+}
+
+.toast-actions .btn-primary {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+    color: white;
+}
+
+.toast-actions .btn-primary:hover {
+    background-color: #0b5ed7;
+    border-color: #0a58ca;
+}
+
+.toast-actions .btn-outline-secondary {
+    color: #6c757d;
+    border-color: #6c757d;
+}
+
+.toast-actions .btn-outline-secondary:hover {
+    background-color: #6c757d;
+    color: white;
+}
+
+/* Enhanced Notification Toast Styles */
+.toast-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 12px;
+    max-width: 450px;
+}
+
+/* Centered toast container for confirmations */
+.toast-container.centered {
+    top: 50%;
+    left: 50%;
+    right: auto;
+    transform: translate(-50%, -50%);
+    max-width: 500px;
+    width: 90%;
+    pointer-events: none;
+}
+
+/* Ensure centered toasts are properly positioned */
+.toast-container.centered .toast-notification {
+    pointer-events: auto;
+    margin: 0 auto;
+}
+
+/* Regular toasts (success, error, warning, info) stay on sides */
+/* Only confirmation toasts are centered */
+
+/* Enhanced confirmation toast styling for center display */
+.toast-notification.toast-confirmation {
+    min-width: 320px;
+    max-width: 500px;
+    background: linear-gradient(135deg, #fff4e6 0%, #ffe8cc 100%);
+    border: 2px solid #fd7e14;
+    box-shadow: 0 12px 32px rgba(0,0,0,0.25), 0 6px 16px rgba(0,0,0,0.15);
+    padding: 24px;
+}
+
+/* Different color schemes for different confirmation types */
+.toast-confirmation.mark-confirmation {
+    background: linear-gradient(135deg, #e7f5ff 0%, #d0ebff 100%);
+    border-color: #1c7ed6;
+}
+
+.toast-confirmation.mark-confirmation .toast-icon {
+    background: linear-gradient(135deg, #d0ebff, #a5d8ff);
+    color: #1c7ed6;
+}
+
+.toast-confirmation.mark-confirmation .toast-title {
+    color: #1864ab;
+}
+
+.toast-confirmation.clear-confirmation {
+    background: linear-gradient(135deg, #fff4e6 0%, #ffe8cc 100%);
+    border-color: #fd7e14;
+}
+
+.toast-confirmation.clear-confirmation .toast-icon {
+    background: linear-gradient(135deg, #ffd8a8, #ffc078);
+    color: #fd7e14;
+}
+
+.toast-confirmation.clear-confirmation .toast-title {
+    color: #e67700;
+}
+
+.toast-confirmation.delete-confirmation {
+    background: linear-gradient(135deg, #fff5f5 0%, #ffe3e3 100%);
+    border-color: #fa5252;
+}
+
+.toast-confirmation.delete-confirmation .toast-icon {
+    background: linear-gradient(135deg, #ffc9c9, #ffa8a8);
+    color: #fa5252;
+}
+
+.toast-confirmation.delete-confirmation .toast-title {
+    color: #c92a2a;
+}
+
+.toast-notification.toast-confirmation .toast-icon {
+    font-size: 2rem;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 12px;
+}
+
+.toast-notification.toast-confirmation .toast-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.toast-notification.toast-confirmation .toast-message {
+    font-size: 1rem;
+    color: #495057;
+    margin-bottom: 16px;
+    line-height: 1.5;
+}
+
+.toast-confirmation-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 20px;
+    justify-content: center;
+}
+
+.toast-confirmation-actions .btn {
+    padding: 10px 20px;
+    font-size: 0.95rem;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    min-width: 100px;
+}
+
+.toast-confirmation-actions .btn-cancel {
+    background: #f8f9fa;
+    color: #495057;
+    border: 2px solid #dee2e6;
+}
+
+.toast-confirmation-actions .btn-cancel:hover {
+    background: #e9ecef;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.toast-confirmation-actions .btn-confirm {
+    background: linear-gradient(135deg, #fd7e14, #ff922b);
+    color: white;
+    border: none;
+}
+
+.toast-confirmation-actions .btn-confirm:hover {
+    background: linear-gradient(135deg, #e67700, #fd7e14);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(253, 126, 20, 0.4);
+}
+
+/* Specific confirm button styles */
+.mark-confirmation .btn-confirm {
+    background: linear-gradient(135deg, #1c7ed6, #339af0);
+}
+
+.mark-confirmation .btn-confirm:hover {
+    background: linear-gradient(135deg, #1864ab, #1c7ed6);
+    box-shadow: 0 6px 16px rgba(28, 126, 214, 0.4);
+}
+
+.clear-confirmation .btn-confirm {
+    background: linear-gradient(135deg, #fd7e14, #ff922b);
+}
+
+.clear-confirmation .btn-confirm:hover {
+    background: linear-gradient(135deg, #e67700, #fd7e14);
+    box-shadow: 0 6px 16px rgba(253, 126, 20, 0.4);
+}
+
+.delete-confirmation .btn-confirm {
+    background: linear-gradient(135deg, #fa5252, #ff6b6b);
+}
+
+.delete-confirmation .btn-confirm:hover {
+    background: linear-gradient(135deg, #c92a2a, #fa5252);
+    box-shadow: 0 6px 16px rgba(250, 82, 82, 0.4);
+}
+
+/* Close button for centered confirmations */
+.toast-notification.toast-confirmation .toast-close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 32px;
+    height: 32px;
+    font-size: 1.1rem;
+    background: rgba(0,0,0,0.05);
+}
+
+.toast-notification.toast-confirmation .toast-close:hover {
+    background: rgba(0,0,0,0.1);
+    color: #495057;
+}
+
+.toast-notification {
+    min-width: 320px;
+    max-width: 450px;
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.15), 0 4px 12px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 18px;
+    opacity: 0;
+    transform: translateX(100%) scale(0.95);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgba(0,0,0,0.05);
+}
+
+.toast-notification.show {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+}
+
+.toast-notification.toast-exiting {
+    opacity: 0;
+    transform: translateX(100%) scale(0.8);
+}
+
+/* Enhanced color schemes with gradients */
+.toast-notification.success {
+    border-left: 5px solid;
+    border-image: linear-gradient(180deg, #28a745, #20c997) 1;
+    background: linear-gradient(135deg, #f0fff4 0%, #e6f7ee 100%);
+}
+
+.toast-notification.error {
+    border-left: 5px solid;
+    border-image: linear-gradient(180deg, #dc3545, #e35d6a) 1;
+    background: linear-gradient(135deg, #fff5f5 0%, #ffe6e6 100%);
+}
+
+.toast-notification.warning {
+    border-left: 5px solid;
+    border-image: linear-gradient(180deg, #ffc107, #ffd43b) 1;
+    background: linear-gradient(135deg, #fff9db 0%, #fff3bf 100%);
+}
+
+.toast-notification.info {
+    border-left: 5px solid;
+    border-image: linear-gradient(180deg, #17a2b8, #3bc9db) 1;
+    background: linear-gradient(135deg, #e7f5ff 0%, #d0ebff 100%);
+}
+
+.toast-notification.confirmation {
+    border-left: 5px solid;
+    border-image: linear-gradient(180deg, #fd7e14, #ff922b) 1;
+    background: linear-gradient(135deg, #fff4e6 0%, #ffe8cc 100%);
+}
+
+.toast-icon {
+    font-size: 1.6rem;
+    flex-shrink: 0;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+}
+
+.toast-notification.success .toast-icon { color: #28a745; }
+.toast-notification.error .toast-icon { color: #dc3545; }
+.toast-notification.warning .toast-icon { color: #e67700; }
+.toast-notification.info .toast-icon { color: #1098ad; }
+.toast-notification.confirmation .toast-icon { color: #fd7e14; }
+
+.toast-content {
+    flex: 1;
+}
+
+.toast-title {
+    font-weight: 700;
+    margin-bottom: 6px;
+    color: #212529;
+    font-size: 1rem;
+    letter-spacing: 0.2px;
+}
+
+.toast-message {
+    color: #495057;
+    font-size: 0.92rem;
+    line-height: 1.45;
+    font-weight: 500;
+}
+
+.toast-close {
+    background: rgba(0,0,0,0.05);
+    border: none;
+    color: #6c757d;
+    cursor: pointer;
+    padding: 4px;
+    font-size: 0.9rem;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    position: absolute;
+    top: 12px;
+    right: 12px;
+}
+
+.toast-close:hover {
+    background: rgba(0,0,0,0.1);
+    color: #212529;
+    transform: scale(1.1);
+}
+
+.toast-progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: rgba(0,0,0,0.08);
+    overflow: hidden;
+}
+
+.toast-progress-bar {
+    height: 100%;
+    background: currentColor;
+    animation: toast-progress 3s linear forwards;
+    border-radius: 0 2px 2px 0;
+}
+
+.toast-notification.success .toast-progress-bar { background: linear-gradient(90deg, #28a745, #20c997); }
+.toast-notification.error .toast-progress-bar { background: linear-gradient(90deg, #dc3545, #e35d6a); }
+.toast-notification.warning .toast-progress-bar { background: linear-gradient(90deg, #ffc107, #ffd43b); }
+.toast-notification.info .toast-progress-bar { background: linear-gradient(90deg, #17a2b8, #3bc9db); }
+.toast-notification.confirmation .toast-progress-bar { background: linear-gradient(90deg, #fd7e14, #ff922b); }
+
+@keyframes toast-progress {
+    from { width: 100%; }
+    to { width: 0%; }
+}
+
+.toast-confirmation-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 14px;
+}
+
+.toast-confirmation-actions .btn {
+    padding: 8px 16px;
+    font-size: 0.9rem;
+    border-radius: 6px;
+    border: 1px solid transparent;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.toast-confirmation-actions .btn-cancel {
+    background: #f8f9fa;
+    color: #495057;
+    border-color: #dee2e6;
+}
+
+.toast-confirmation-actions .btn-cancel:hover {
+    background: #e9ecef;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.toast-confirmation-actions .btn-confirm {
+    background: linear-gradient(135deg, #dc3545, #c82333);
+    color: white;
+    border: none;
+}
+
+.toast-confirmation-actions .btn-confirm:hover {
+    background: linear-gradient(135deg, #c82333, #b0211e);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+}
+
+/* Toast Actions for new notifications */
+.toast-actions {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(0,0,0,0.1);
+}
+
+.toast-actions .btn {
+    padding: 6px 12px;
+    font-size: 0.85rem;
+    border-radius: 5px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.toast-actions .btn-primary {
+    background: linear-gradient(135deg, #0d6efd, #0b5ed7);
+    border: none;
+    color: white;
+}
+
+.toast-actions .btn-primary:hover {
+    background: linear-gradient(135deg, #0b5ed7, #0a58ca);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(13, 110, 253, 0.3);
+}
+
+.toast-actions .btn-outline-secondary {
+    background: white;
+    border: 1px solid #6c757d;
+    color: #6c757d;
+}
+
+.toast-actions .btn-outline-secondary:hover {
+    background: #6c757d;
+    color: white;
+    transform: translateY(-1px);
+}
+
+/* Notification Badge in Navbar */
+#notification-count {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    font-size: 0.65rem;
+    padding: 2px 6px;
+    border-radius: 10px;
+    min-width: 18px;
+    text-align: center;
+    font-weight: 700;
+}
+
+/* Navbar dropdown notification items */
+#navbar-notifications-list .notification-item {
+    white-space: normal;
+    padding: 10px 12px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+#navbar-notifications-list .notification-item:hover {
+    background-color: #f8f9fa;
+}
+
+#navbar-notifications-list .notification-item.fw-bold {
+    background-color: #e3f2fd;
+}
+
+#navbar-notifications-list .notification-item.fw-bold:hover {
+    background-color: #d1e7fd;
+}
+
+/* Notifications page specific styles */
+.notification-card {
+    transition: all 0.3s ease;
+    border-left: 4px solid transparent;
+}
+
+.notification-card.unread {
+    background-color: #e3f2fd;
+    border-left-color: #2196f3;
+}
+
+.notification-card:hover {
+    transform: translateX(5px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.notification-badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-weight: 600;
+}
+
+.notification-time {
+    font-size: 0.85rem;
+    color: #6c757d;
+}
+
+.notification-message {
+    color: #495057;
+    line-height: 1.5;
+}
+
+.notification-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+}
+
+.notification-actions {
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.notification-card:hover .notification-actions {
+    opacity: 1;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #6c757d;
+}
+
+.empty-state i {
+    font-size: 4rem;
+    margin-bottom: 20px;
+    opacity: 0.5;
+}
+
+.filter-buttons .btn {
+    border-radius: 20px;
+    padding: 8px 16px;
+    font-size: 0.9rem;
+}
+
+.filter-buttons .btn.active {
+    font-weight: 600;
+}
+
+.stats-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.stats-card .stat-number {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 5px;
+}
+
+.stats-card .stat-label {
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+/* Form Labels - Ensure all form labels are black */
+.form-label {
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    color: #000000 !important;
+}
+
+/* Enhanced Project Card Styling */
+#projects-cards-container .project-card {
+    padding: 0.5rem;
+}
+
+#projects-cards-container .project-card .card {
+    transition: all 0.3s ease;
+    border-radius: 12px !important;
+    border: 1px solid #e5e7eb !important;
+}
+
+#projects-cards-container .project-card .card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12) !important;
+    border-color: #cbd5e1 !important;
+}
+
+/* Center cards when less than a full row */
+@media (min-width: 992px) {
+    #projects-cards-container:has(.project-card:nth-child(1):last-child),
+    #projects-cards-container:has(.project-card:nth-child(2):last-child) {
+        justify-content: center !important;
+    }
+}
+
+/* Minimal theme overrides - import applied last */
+@import url('minimal.css');

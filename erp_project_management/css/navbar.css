@@ -1,0 +1,240 @@
+body {
+    font-family: 'Poppins', 'Nunito Sans', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #F5F6FA; /* 60% - overall page background */
+    color: #000000; /* Black text */
+}
+
+/* Status Colors - Adjusted to site-wide palette */
+:root {
+    --success-color: #61c7e9; /* Legacy success accent (buttons) */
+    --site-navy: #04162e; /* Site navbar & footer background */
+    --warning-color: #000000; /* Black for warning */
+    --error-color: #000000;   /* Black for error */
+}
+
+/* UNIFIED NAVIGATION BAR CSS - Single Source for All Modules */
+/* Navbar uses the site navy color for consistency with login footer */
+
+/* Ultra-high specificity for all navbar combinations */
+.navbar.navbar-expand-lg.navbar-dark,
+.navbar.navbar-dark,
+.navbar,
+.site-navbar {
+    background-color: var(--site-navy) !important; /* Dark navy background */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12) !important;
+}
+
+/* Ensure site-navbar receives the same styles with high specificity */
+footer.site-footer, .site-navbar { background-color: var(--site-navy) !important; color: rgba(255,255,255,0.95) !important; }
+
+/* Ensure a consistent navbar height and vertical alignment */
+.site-navbar{height:56px;min-height:56px;padding:0 !important}
+.site-navbar .container-fluid{height:56px;display:flex;align-items:center;padding-left:0;padding-right:0}
+.site-navbar .navbar-brand{padding:0 !important;margin-right:12px;line-height:1;font-weight:700}
+.site-navbar .navbar-brand img{height:36px;display:block}
+.site-navbar .navbar-nav .nav-link{padding-top:.5rem !important;padding-bottom:.5rem !important}
+.site-navbar .navbar-toggler{margin-top:0;margin-bottom:0;padding:.25rem .5rem}
+
+/* Ensure base navbar minimum height so module rules cannot increase it */
+.navbar{min-height:56px}
+
+
+/* Brand styling - covers all variations */
+.navbar.navbar-expand-lg.navbar-dark .navbar-brand,
+.navbar.navbar-dark .navbar-brand,
+.navbar .navbar-brand,
+.navbar.navbar-expand-lg.navbar-dark .navbar-brand span,
+.navbar.navbar-dark .navbar-brand span,
+.navbar .navbar-brand span,
+.navbar.navbar-expand-lg.navbar-dark .navbar-brand i,
+.navbar.navbar-dark .navbar-brand i,
+.navbar .navbar-brand i {
+    color: #ffffff !important;
+    font-weight: 600 !important;
+}
+
+/* Navigation links - covers all variations */
+.navbar.navbar-expand-lg.navbar-dark a.nav-link,
+.navbar.navbar-dark a.nav-link,
+.navbar a.nav-link,
+.navbar.navbar-expand-lg.navbar-dark .nav-link,
+.navbar.navbar-dark .nav-link,
+.navbar .nav-link,
+.navbar.navbar-expand-lg.navbar-dark .nav-item .nav-link,
+.navbar.navbar-dark .nav-item .nav-link,
+.navbar .nav-item .nav-link {
+    color: #ffffff !important;
+    font-weight: 500 !important;
+}
+
+/* Hover states */
+.navbar.navbar-expand-lg.navbar-dark a.nav-link:hover,
+.navbar.navbar-dark a.nav-link:hover,
+.navbar a.nav-link:hover,
+.navbar.navbar-expand-lg.navbar-dark .nav-link:hover,
+.navbar.navbar-dark .nav-link:hover,
+.navbar .nav-link:hover,
+.navbar.navbar-expand-lg.navbar-dark .nav-item .nav-link:hover,
+.navbar.navbar-dark .nav-item .nav-link:hover,
+.navbar .nav-item .nav-link:hover {
+    color: #ffffff !important;
+    background-color: rgba(255, 255, 255, 0.2) !important;
+    border-radius: 4px;
+}
+
+/* Active states */
+.navbar.navbar-expand-lg.navbar-dark a.nav-link.active,
+.navbar.navbar-dark a.nav-link.active,
+.navbar a.nav-link.active,
+.navbar.navbar-expand-lg.navbar-dark .nav-link.active,
+.navbar.navbar-dark .nav-link.active,
+.navbar .nav-link.active,
+.navbar.navbar-expand-lg.navbar-dark .nav-item .nav-link.active,
+.navbar.navbar-dark .nav-item .nav-link.active,
+.navbar .nav-item .nav-link.active {
+    color: #ffffff !important;
+    background-color: rgba(255, 255, 255, 0.3) !important;
+    border-radius: 4px;
+    font-weight: 600 !important;
+}
+
+/* Button styles (optional - align to primary accent but remain visible on dark navbar) */
+.btn-primary {
+    background-color: var(--primary); /* Accent used across the site */
+    border-color: var(--primary);
+    color: #ffffff;
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-variant);
+    border-color: var(--primary-variant);
+    color: #ffffff;
+}
+
+.btn-secondary {
+    background-color: rgba(255,255,255,0.06); /* neutral on dark navbar */
+    border-color: rgba(255,255,255,0.06);
+    color: #ffffff; /* White text */
+}
+
+.btn-secondary:hover {
+    background-color: rgba(255,255,255,0.12);
+    border-color: rgba(255,255,255,0.12);
+    color: #ffffff;
+}
+
+.alert {
+    transition: opacity 0.5s ease-in-out;
+}
+
+/* Notification Dropdown Styles */
+.navbar .dropdown-menu {
+    background-color: #ffffff !important;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    margin-top: 8px !important;
+}
+
+.navbar .dropdown-menu .dropdown-header {
+    color: #212529 !important;
+    font-weight: 600 !important;
+    font-size: 1rem !important;
+    padding: 10px 16px !important;
+}
+
+.navbar .dropdown-menu .dropdown-item {
+    color: #495057 !important;
+    padding: 10px 16px !important;
+    transition: background-color 0.2s;
+}
+
+.navbar .dropdown-menu .dropdown-item:hover {
+    background-color: #f8f9fa !important;
+    color: #212529 !important;
+}
+
+.navbar .dropdown-menu .dropdown-item:focus {
+    background-color: #f8f9fa !important;
+    color: #212529 !important;
+}
+
+.navbar .dropdown-menu .dropdown-divider {
+    border-top: 1px solid #e9ecef !important;
+    margin: 8px 0 !important;
+}
+
+/* Notification badge in navbar */
+.navbar .badge.bg-danger {
+    background-color: #dc3545 !important;
+    font-size: 0.65rem !important;
+    padding: 2px 6px !important;
+    border-radius: 10px !important;
+    min-width: 18px !important;
+    text-align: center !important;
+    font-weight: 700 !important;
+    position: absolute !important;
+    top: -5px !important;
+    right: -5px !important;
+}
+
+/* Bell icon container */
+.navbar .dropdown-toggle {
+    position: relative !important;
+}
+
+.navbar .dropdown-toggle .fa-bell {
+    font-size: 1.1rem !important;
+}
+
+/* Navbar notification items */
+#navbar-notifications-list .notification-item {
+    white-space: normal !important;
+    padding: 10px 12px !important;
+    border-radius: 4px !important;
+    transition: background-color 0.2s !important;
+}
+
+#navbar-notifications-list .notification-item:hover {
+    background-color: #f8f9fa !important;
+}
+
+#navbar-notifications-list .notification-item.fw-bold {
+    background-color: #e3f2fd !important;
+}
+
+#navbar-notifications-list .notification-item.fw-bold:hover {
+    background-color: #d1e7fd !important;
+}
+
+/* View All button in dropdown */
+.navbar .dropdown-menu .btn {
+    border-radius: 4px !important;
+    font-size: 0.85rem !important;
+    padding: 6px 10px !important;
+}
+
+.navbar .dropdown-menu .btn-outline-primary {
+    color: #0d6efd !important;
+    border-color: #0d6efd !important;
+}
+
+.navbar .dropdown-menu .btn-outline-primary:hover {
+    background-color: #0d6efd !important;
+    color: white !important;
+}
+
+.navbar .dropdown-menu .btn-outline-secondary {
+    color: #6c757d !important;
+    border-color: #6c757d !important;
+}
+
+.navbar .dropdown-menu .btn-outline-secondary:hover {
+    background-color: #6c757d !important;
+    color: white !important;
+}
+
+/* Aggressive normalization removed — using milder site-navbar rules above */
+
+/* Minimal theme overrides - import applied last */
+@import url('minimal.css');

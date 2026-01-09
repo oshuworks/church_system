@@ -1,0 +1,1076 @@
+html, body {
+    height: 100%;
+}
+
+body {
+    font-family: 'Poppins', 'Nunito Sans', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #fefefe;
+    color: #000000;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.page-wrapper {
+    flex: 1 0 auto;
+}
+
+footer {
+    flex-shrink: 0;
+}
+
+/* Navigation bar styles are now centralized in css/navbar.css */
+
+.btn-primary {
+    background-color: var(--primary);
+    border-color: var(--primary);
+    color: #ffffff;
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-variant);
+    border-color: var(--primary-variant);
+    color: #ffffff;
+}
+
+.alert {
+    transition: opacity 0.5s ease-in-out;
+}
+
+/* Unified Navigation Bar */
+.navbar {
+    background-color: var(--site-navy, #04162e) !important; /* Use shared site navy (with fallback) */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12) !important; /* Add subtle shadow */
+}
+
+.navbar-brand {
+    color: #ffffff !important; /* White text for better contrast */
+    font-weight: 600 !important;
+}
+
+a.nav-link {
+    color: #ffffff !important; /* White text for better contrast */
+    font-weight: 500 !important;
+}
+
+a.nav-link:hover {
+    color: #ffffff !important; /* White text on hover */
+    background-color: rgba(255, 255, 255, 0.2) !important; /* Subtle white background on hover */
+    border-radius: 4px;
+}
+
+a.nav-link.active {
+    color: #ffffff !important;
+    background-color: rgba(255, 255, 255, 0.3) !important; /* More visible background for active page */
+    border-radius: 4px;
+    font-weight: 600 !important;
+}
+
+/* Module-specific navbar normalization: match site-wide sizing and alignment */
+.site-navbar{height:56px;min-height:56px;padding:0 !important}
+.site-navbar .container-fluid{height:56px;display:flex;align-items:center;padding-left:0;padding-right:0}
+.site-navbar .navbar-brand{padding:0 !important;margin-right:12px;line-height:1;font-weight:700}
+.site-navbar .navbar-brand img{height:36px;display:block}
+.site-navbar .navbar-nav .nav-link{padding-top:.5rem !important;padding-bottom:.5rem !important}
+.site-navbar .navbar-toggler{margin-top:0;margin-bottom:0;padding:.25rem .5rem}
+
+/* End module navbar normalization */
+
+/* Gantt Chart Styling */
+#gantt-container {
+    background-color: #ffffff;
+    border-radius: 8px;
+    padding: 20px;
+    margin-top: 20px;
+    overflow-x: auto;
+    overflow-y: visible;
+}
+
+#gantt-chart {
+    width: 100%;
+    min-height: 400px;
+}
+
+/* Gantt task status classes - using blue, black, white only */
+.gantt .bar-wrapper .bar.completed {
+    fill: #1a6985;
+}
+
+.gantt .bar-wrapper .bar.in-progress {
+    fill: #60c3e6;
+}
+
+.gantt .bar-wrapper .bar.not-started {
+    fill: #6c757d;
+}
+
+.gantt .bar-wrapper .bar-progress {
+    fill: rgba(96, 195, 230, 0.2);
+}
+
+/* Timeline View Styling */
+.timeline {
+    position: relative;
+    padding: 20px 0;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 30px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #dee2e6;
+}
+
+.timeline-item {
+    position: relative;
+    padding-left: 60px;
+    margin-bottom: 30px;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: 20px;
+    top: 5px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #6c757d;
+    border: 3px solid #ffffff;
+    box-shadow: 0 0 0 3px #dee2e6;
+    z-index: 1;
+}
+
+.timeline-item.completed .timeline-marker {
+    background: #1a6985;
+    box-shadow: 0 0 0 3px #1a6985;
+}
+
+.timeline-item.in-progress .timeline-marker {
+    background: #60c3e6;
+    box-shadow: 0 0 0 3px #60c3e6;
+}
+
+.timeline-item.not-started .timeline-marker {
+    background: #6c757d;
+    box-shadow: 0 0 0 3px #6c757d;
+}
+
+.timeline-item.overdue .timeline-marker {
+    background: #60c3e6;
+    box-shadow: 0 0 0 3px #60c3e6;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+.timeline-content {
+    background: #ffffff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border-left: 4px solid #dee2e6;
+}
+
+.timeline-item.completed .timeline-content {
+    border-left-color: #1a6985;
+}
+
+.timeline-item.in-progress .timeline-content {
+    border-left-color: #60c3e6;
+}
+
+.timeline-item.not-started .timeline-content {
+    border-left-color: #6c757d;
+}
+
+.timeline-item.overdue .timeline-content {
+    border-left-color: #60c3e6;
+    background: #f5f5f5;
+}
+
+.timeline-content h5 {
+    margin-bottom: 10px;
+    color: #000000;
+}
+
+.timeline-content .small {
+    font-size: 0.875rem;
+    color: #6c757d;
+}
+
+/* WBS Table Styling */
+.table-responsive {
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.table-hover tbody tr:hover {
+    background-color: #f8f9fa;
+    cursor: pointer;
+}
+
+.table-hover tbody tr:hover td {
+    background-color: #f8f9fa;
+}
+
+/* Project Progress Bar */
+.progress-bar-striped {
+    background-image: linear-gradient(45deg, rgba(255, 255, 255, 0.15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0.15) 75%, transparent 75%, transparent);
+    background-size: 1rem 1rem;
+}
+
+.progress-bar-animated {
+    animation: progress-bar-stripes 1s linear infinite;
+}
+
+@keyframes progress-bar-stripes {
+    0% {
+        background-position: 1rem 0;
+    }
+    100% {
+        background-position: 0 0;
+    }
+}
+
+/* Task Dependency Badge */
+.badge.bg-info {
+    background-color: #1a6985 !important;
+    color: #ffffff !important;
+}
+
+/* Modal Enhancements */
+.modal-content {
+    border-radius: 8px;
+    border: none;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+.modal-header {
+    border-bottom: 1px solid #dee2e6;
+    padding: 1.25rem;
+}
+
+.modal-footer {
+    border-top: 1px solid #dee2e6;
+    padding: 1.25rem;
+}
+
+/* Form Enhancements */
+.form-label {
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    color: #000000 !important;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: #1a6985;
+    box-shadow: 0 0 0 0.2rem rgba(26, 105, 133, 0.25);
+}
+
+/* Tab Navigation */
+.nav-tabs {
+    border-bottom: 2px solid #dee2e6;
+}
+
+.nav-tabs .nav-link {
+    color: #6c757d;
+    border: none;
+    border-bottom: 2px solid transparent;
+    padding: 0.75rem 1.5rem;
+    transition: all 0.3s;
+}
+
+.nav-tabs .nav-link:hover {
+    border-bottom-color: #dee2e6;
+    color: #495057;
+}
+
+.nav-tabs .nav-link.active {
+    color: #1a6985;
+    border-bottom-color: #1a6985;
+    font-weight: 600;
+}
+
+/* Loading States */
+.loading-spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(0, 0, 0, 0.1);
+    border-radius: 50%;
+    border-top-color: #1a6985;
+    animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .timeline::before {
+        left: 15px;
+    }
+    
+    .timeline-item {
+        padding-left: 40px;
+    }
+    
+    .timeline-marker {
+        left: 5px;
+        width: 16px;
+        height: 16px;
+    }
+    
+    #gantt-container {
+        padding: 10px;
+    }
+}
+
+/* WBS Card Styling */
+.progress-toggle-buttons .btn-group {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.progress-toggle-buttons .btn {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.progress-toggle-buttons .btn-primary {
+    background-color: #1a6985;
+    border-color: #1a6985;
+    color: #ffffff;
+}
+
+.progress-toggle-buttons .btn-outline-dark {
+    color: #000000;
+    border-color: #000000;
+}
+
+.progress-toggle-buttons .btn-outline-dark:hover {
+    background-color: #60c3e6;
+    border-color: #60c3e6;
+    color: #000000;
+}
+
+.card.shadow-sm {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card.shadow-sm:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Flatpickr Date Picker Styling */
+.flatpickr-calendar {
+    font-family: 'Poppins', sans-serif;
+}
+
+.flatpickr-day.flatpickr-disabled,
+.flatpickr-day.prevMonthDay,
+.flatpickr-day.nextMonthDay {
+    color: #ccc !important;
+    background-color: #f5f5f5 !important;
+    cursor: not-allowed !important;
+}
+
+.flatpickr-day.flatpickr-disabled:hover {
+    background-color: #f5f5f5 !important;
+}
+
+.flatpickr-day:not(.flatpickr-disabled):not(.prevMonthDay):not(.nextMonthDay) {
+    color: #000000 !important;
+}
+
+.flatpickr-day.selected,
+.flatpickr-day.startRange,
+.flatpickr-day.endRange,
+.flatpickr-day.selected.inRange,
+.flatpickr-day.startRange.inRange,
+.flatpickr-day.endRange.inRange {
+    background: #1a6985 !important;
+    border-color: #1a6985 !important;
+    color: #ffffff !important;
+}
+
+.flatpickr-day.inRange {
+    background: rgba(26, 105, 133, 0.1) !important;
+    border-color: rgba(26, 105, 133, 0.2) !important;
+}
+
+.flatpickr-day:hover:not(.flatpickr-disabled):not(.prevMonthDay):not(.nextMonthDay) {
+    background: #60c3e6 !important;
+    border-color: #60c3e6 !important;
+    color: #ffffff !important;
+}
+
+/* Analytics card clickable styling */
+.analytics-card-clickable {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.analytics-card-clickable:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2) !important;
+}
+
+.analytics-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 1050;
+    margin-top: 8px;
+    width: 100%;
+    animation: slideDown 0.3s ease;
+}
+
+.analytics-dropdown .card {
+    border: 1px solid #dee2e6;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+    width: 100%;
+}
+
+/* Responsive adjustments for dropdowns */
+@media (max-width: 768px) {
+    .analytics-dropdown {
+        position: fixed;
+        left: 50% !important;
+        transform: translateX(-50%);
+        width: 90vw;
+        max-width: 400px;
+    }
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Text truncation for cards */
+.card-title-truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+}
+
+.card-text-truncate {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.4;
+    max-height: 2.8em; /* Approximately 2 lines */
+}
+
+/* Task card specific truncation */
+.wbs-card .card-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+}
+
+.wbs-card .card-text {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.4;
+    max-height: 2.8em;
+}
+
+/* Task card alignment styles */
+.task-description-container {
+    min-height: 80px; /* Fixed height to prevent content from moving up */
+    display: flex;
+    flex-direction: column;
+}
+
+.task-description-text {
+    flex-grow: 1;
+    margin-bottom: 0.5rem !important;
+}
+
+.task-info-section .task-info-row {
+    min-height: 24px;
+}
+
+.task-info-label {
+    min-width: 120px;
+    flex-shrink: 0;
+}
+
+.task-info-value {
+    text-align: right;
+    flex-shrink: 0;
+    min-width: 100px;
+}
+
+.task-progress-section .task-info-row {
+    min-height: 24px;
+}
+
+/* Ensure progress toggle buttons are always visible and aligned */
+.progress-toggle-buttons {
+    min-height: 38px;
+    display: flex;
+    align-items: center;
+}
+
+/* For tasks with subtasks, maintain same height as toggle buttons */
+.task-progress-section .alert {
+    min-height: 38px;
+    display: flex;
+    align-items: center;
+    margin-bottom: 0 !important;
+}
+
+/* Enhanced Toast Notification System */
+.toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-width: 450px;
+    pointer-events: none;
+}
+/* Centered toast container for confirmations */
+.toast-container.centered {
+    top: 50%;
+    left: 50%;
+    right: auto;
+    transform: translate(-50%, -50%);
+    max-width: 500px;
+    width: 90%;
+    pointer-events: none;
+}
+
+/* Ensure centered toasts are properly positioned */
+.toast-container.centered .toast-notification {
+    pointer-events: auto;
+    margin: 0 auto;
+}
+.toast-notification {
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15), 0 4px 12px rgba(0, 0, 0, 0.1);
+    padding: 16px 20px;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    min-width: 320px;
+    max-width: 450px;
+    pointer-events: auto;
+    border: 1px solid rgba(0,0,0,0.05);
+    position: relative;
+    overflow: hidden;
+    opacity: 0;
+    transform: translateX(100%) scale(0.95);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.toast-notification.show {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+}
+
+.toast-notification.toast-exiting {
+    opacity: 0;
+    transform: translateX(100%) scale(0.8);
+}
+
+.toast-icon {
+    font-size: 1.6rem;
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+}
+
+.toast-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.toast-title {
+    font-weight: 700;
+    font-size: 16px;
+    margin-bottom: 6px;
+    color: #212529;
+    line-height: 1.4;
+    letter-spacing: 0.2px;
+}
+
+.toast-message {
+    font-size: 14px;
+    color: #495057;
+    line-height: 1.45;
+    margin: 0;
+    font-weight: 500;
+}
+
+.toast-close {
+    background: rgba(0, 0, 0, 0.05);
+    border: none;
+    font-size: 16px;
+    color: #6c757d;
+    cursor: pointer;
+    padding: 4px;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+    position: absolute;
+    top: 12px;
+    right: 12px;
+}
+
+.toast-close:hover {
+    background: rgba(0, 0, 0, 0.1);
+    color: #212529;
+    transform: scale(1.1);
+}
+
+/* Toast Types with Enhanced Gradients */
+.toast-success {
+    border-left: 5px solid;
+    border-image: linear-gradient(180deg, #28a745, #20c997) 1;
+    background: linear-gradient(135deg, #f0fff4 0%, #e6f7ee 100%);
+}
+
+.toast-success .toast-icon {
+    background: linear-gradient(135deg, #d4edda, #c3e6cb);
+    color: #28a745;
+}
+
+.toast-error {
+    border-left: 5px solid;
+    border-image: linear-gradient(180deg, #dc3545, #e35d6a) 1;
+    background: linear-gradient(135deg, #fff5f5 0%, #ffe6e6 100%);
+}
+
+.toast-error .toast-icon {
+    background: linear-gradient(135deg, #f8d7da, #f5c6cb);
+    color: #dc3545;
+}
+
+.toast-warning {
+    border-left: 5px solid;
+    border-image: linear-gradient(180deg, #ffc107, #ffd43b) 1;
+    background: linear-gradient(135deg, #fff9db 0%, #fff3bf 100%);
+}
+
+.toast-warning .toast-icon {
+    background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+    color: #e67700;
+}
+
+.toast-info {
+    border-left: 5px solid;
+    border-image: linear-gradient(180deg, #17a2b8, #3bc9db) 1;
+    background: linear-gradient(135deg, #e7f5ff 0%, #d0ebff 100%);
+}
+
+.toast-info .toast-icon {
+    background: linear-gradient(135deg, #d1ecf1, #bee5eb);
+    color: #1098ad;
+}
+
+/* Toast Confirmation */
+.toast-confirmation {
+    min-width: 320px;
+    max-width: 500px;
+    box-shadow: 0 12px 32px rgba(0,0,0,0.25), 0 6px 16px rgba(0,0,0,0.15);
+    padding: 24px;
+}
+
+/* Different color schemes for different confirmation types */
+.toast-confirmation.mark-confirmation {
+    background: linear-gradient(135deg, #e7f5ff 0%, #d0ebff 100%);
+    border: 2px solid #1c7ed6;
+}
+
+.toast-confirmation.mark-confirmation .toast-icon {
+    background: linear-gradient(135deg, #d0ebff, #a5d8ff);
+    color: #1c7ed6;
+}
+
+.toast-confirmation.mark-confirmation .toast-title {
+    color: #1864ab;
+}
+
+.toast-confirmation.clear-confirmation {
+    background: linear-gradient(135deg, #fff4e6 0%, #ffe8cc 100%);
+    border: 2px solid #fd7e14;
+}
+
+.toast-confirmation.clear-confirmation .toast-icon {
+    background: linear-gradient(135deg, #ffd8a8, #ffc078);
+    color: #fd7e14;
+}
+
+.toast-confirmation.clear-confirmation .toast-title {
+    color: #e67700;
+}
+
+.toast-confirmation.delete-confirmation {
+    background: linear-gradient(135deg, #fff5f5 0%, #ffe3e3 100%);
+    border: 2px solid #fa5252;
+}
+
+.toast-confirmation.delete-confirmation .toast-icon {
+    background: linear-gradient(135deg, #ffc9c9, #ffa8a8);
+    color: #fa5252;
+}
+
+.toast-confirmation.delete-confirmation .toast-title {
+    color: #c92a2a;
+}
+
+.toast-confirmation .toast-icon {
+    font-size: 2rem;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 12px;
+}
+
+.toast-confirmation .toast-content {
+    padding-right: 30px;
+}
+
+.toast-confirmation .toast-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.toast-confirmation .toast-message {
+    font-size: 1rem;
+    color: #495057;
+    margin-bottom: 16px;
+    line-height: 1.5;
+}
+
+.toast-confirmation-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 20px;
+    justify-content: center;
+}
+
+.toast-confirmation-actions .btn {
+    padding: 10px 20px;
+    font-size: 0.95rem;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    min-width: 100px;
+}
+
+.toast-confirmation-actions .btn-cancel {
+    background: #f8f9fa;
+    color: #495057;
+    border: 2px solid #dee2e6;
+}
+
+.toast-confirmation-actions .btn-cancel:hover {
+    background: #e9ecef;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.toast-confirmation-actions .btn-confirm {
+    background: linear-gradient(135deg, #fd7e14, #ff922b);
+    color: white;
+    border: none;
+}
+
+.toast-confirmation-actions .btn-confirm:hover {
+    background: linear-gradient(135deg, #e67700, #fd7e14);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(253, 126, 20, 0.4);
+}
+
+/* Specific confirm button styles */
+.mark-confirmation .btn-confirm {
+    background: linear-gradient(135deg, #1c7ed6, #339af0);
+}
+
+.mark-confirmation .btn-confirm:hover {
+    background: linear-gradient(135deg, #1864ab, #1c7ed6);
+    box-shadow: 0 6px 16px rgba(28, 126, 214, 0.4);
+}
+
+.clear-confirmation .btn-confirm {
+    background: linear-gradient(135deg, #fd7e14, #ff922b);
+}
+
+.clear-confirmation .btn-confirm:hover {
+    background: linear-gradient(135deg, #e67700, #fd7e14);
+    box-shadow: 0 6px 16px rgba(253, 126, 20, 0.4);
+}
+
+.delete-confirmation .btn-confirm {
+    background: linear-gradient(135deg, #fa5252, #ff6b6b);
+}
+
+.delete-confirmation .btn-confirm:hover {
+    background: linear-gradient(135deg, #c92a2a, #fa5252);
+    box-shadow: 0 6px 16px rgba(250, 82, 82, 0.4);
+}
+
+/* Close button for centered confirmations */
+.toast-confirmation .toast-close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 32px;
+    height: 32px;
+    font-size: 1.1rem;
+    background: rgba(0,0,0,0.05);
+}
+
+.toast-confirmation .toast-close:hover {
+    background: rgba(0,0,0,0.1);
+    color: #495057;
+}
+
+/* Toast Progress Bar */
+.toast-progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: rgba(0,0,0,0.08);
+    overflow: hidden;
+}
+
+.toast-progress-bar {
+    height: 100%;
+    background: currentColor;
+    animation: toast-progress 3s linear forwards;
+    border-radius: 0 2px 2px 0;
+}
+
+.toast-success .toast-progress-bar { background: linear-gradient(90deg, #28a745, #20c997); }
+.toast-error .toast-progress-bar { background: linear-gradient(90deg, #dc3545, #e35d6a); }
+.toast-warning .toast-progress-bar { background: linear-gradient(90deg, #ffc107, #ffd43b); }
+.toast-info .toast-progress-bar { background: linear-gradient(90deg, #17a2b8, #3bc9db); }
+.toast-confirmation .toast-progress-bar { background: linear-gradient(90deg, #fd7e14, #ff922b); }
+
+@keyframes toast-progress {
+    from { width: 100%; }
+    to { width: 0%; }
+}
+
+/* Toast Actions for new notifications */
+.toast-actions {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(0,0,0,0.1);
+}
+
+.toast-actions .btn {
+    padding: 6px 12px;
+    font-size: 13px;
+    border-radius: 5px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.toast-actions .btn-primary {
+    background: linear-gradient(135deg, #0d6efd, #0b5ed7);
+    border: none;
+    color: white;
+}
+
+.toast-actions .btn-primary:hover {
+    background: linear-gradient(135deg, #0b5ed7, #0a58ca);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(13, 110, 253, 0.3);
+}
+
+.toast-actions .btn-outline-secondary {
+    background: white;
+    border: 1px solid #6c757d;
+    color: #6c757d;
+}
+
+.toast-actions .btn-outline-secondary:hover {
+    background: #6c757d;
+    color: white;
+    transform: translateY(-1px);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .toast-container {
+        left: 15px;
+        right: 15px;
+        max-width: none;
+    }
+    
+    .toast-notification {
+        min-width: auto;
+        max-width: none;
+    }
+}
+
+.toast-error .toast-icon {
+    background: #f8d7da;
+    color: #dc3545;
+}
+
+.toast-warning {
+    border-left-color: #ffc107;
+}
+
+.toast-warning .toast-icon {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.toast-info {
+    border-left-color: #1a6985;
+}
+
+.toast-info .toast-icon {
+    background: #d1ecf1;
+    color: #1a6985;
+}
+
+/* Toast Confirmation */
+.toast-confirmation {
+    border-left-color: #1a6985;
+    padding: 20px;
+}
+
+.toast-confirmation .toast-icon {
+    background: #d1ecf1;
+    color: #1a6985;
+}
+
+.toast-confirmation .toast-content {
+    margin-bottom: 16px;
+}
+
+.toast-confirmation-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    margin-top: 12px;
+}
+
+.toast-confirmation-actions .btn {
+    padding: 8px 16px;
+    font-size: 14px;
+    border-radius: 6px;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.toast-confirmation-actions .btn-confirm {
+    background-color: #dc3545;
+    color: #ffffff;
+    border: none;
+}
+
+.toast-confirmation-actions .btn-confirm:hover {
+    background-color: #c82333;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
+}
+
+.toast-confirmation-actions .btn-cancel {
+    background-color: #6c757d;
+    color: #ffffff;
+    border: none;
+}
+
+.toast-confirmation-actions .btn-cancel:hover {
+    background-color: #5a6268;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(108, 117, 125, 0.3);
+}
+
+/* Progress bar for auto-dismiss */
+.toast-progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 3px;
+    background: rgba(0, 0, 0, 0.1);
+    width: 100%;
+    overflow: hidden;
+}
+
+.toast-progress-bar {
+    height: 100%;
+    background: currentColor;
+    opacity: 0.3;
+    animation: progressBar linear forwards;
+}
+
+@keyframes progressBar {
+    from {
+        width: 100%;
+    }
+    to {
+        width: 0%;
+    }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .toast-container {
+        left: 20px;
+        right: 20px;
+        max-width: none;
+    }
+    
+    .toast-notification {
+        min-width: auto;
+        max-width: none;
+    }
+}
